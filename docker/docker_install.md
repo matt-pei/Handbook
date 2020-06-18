@@ -187,7 +187,7 @@ docker启动gitlab
 mkdir -pv /data/gitlab_storage
 export GITLAB_HOME=/data/gitlab_storage
 
-docker启动Registry
+#docker启动Registry
 mkdir -pv /data/registry_storage
 docker run -dit \
     -p 5000:5000 \
@@ -196,7 +196,7 @@ docker run -dit \
     --restart always \
     registry:2.7
 
-docker启动portainer
+#docker启动portainer
 docker run -dit \
     -p 9000:9000 -p 8000:8000 \
     -v /data/portainer_storage:/data \
