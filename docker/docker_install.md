@@ -205,3 +205,18 @@ docker run -dit \
     --restart always \
     portainer/portainer:1.24.0
 ```
+#### cAdvisor监控docker容器
+```
+docker run -dit \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:ro \
+  --volume=/sys:/sys:ro \
+  --volume=/data/docker_store/:/var/lib/docker:ro \
+  --volume=/dev/disk/:/dev/disk:ro \
+  --publish=8181:8080 \
+  --detach=true \
+  --name=cadvisor \
+  --privileged \
+  --device=/dev/kmsg \
+  google/cadvisor:v0.32.0
+```
