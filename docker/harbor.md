@@ -1,6 +1,7 @@
-# Harbor私有镜像仓库
+# Harbor
 Our mission is to be the trusted cloud native repository for Kubernetes
 
+<img alt="Harbor" src="img/harbor_logo.png">
 ---
 
 ### 目录
