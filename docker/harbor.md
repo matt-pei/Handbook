@@ -48,7 +48,7 @@ Port &emsp;&emsp;&emsp; 协议 &emsp;&emsp;&emsp; 描述
 
 ---
 
-80 &emsp; &emsp; &emsp; &emsp;HTTP &emsp; &emsp;Harbor入口和核心API在此端口上接受HTTP请求。您可以在配置文件中更改此端口。
+80 &emsp; &emsp; &emsp; &ensp;HTTP &emsp; &emsp;Harbor入口和核心API在此端口上接受HTTP请求。您可以在配置文件中更改此端口。
 
 
 #### 下载harbor安装包
