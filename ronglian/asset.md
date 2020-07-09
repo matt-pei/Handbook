@@ -11,7 +11,8 @@
 山东    Ip：192.168.179.148  root:abcABC!@#
 bsdev  Ip：192.168.179.231  root:1+2mx8m,>D
 禅道    Ip：192.168.179.235:5522    root:rootpass
-       Ip：192.168.180.160:5522    root:JenKins7788@
+Jks    Ip：192.168.180.160:5522    root:JenKins7788@
+测试板  Ip：192.168.181.31  root:123456
 AI     Ip：192.168.181.211  root:123456
 AI     Ip：192.168.181.212  root:6aJ3G0%p&wa
 AI     Ip：192.168.181.213  root:1+2mx8m,>D
@@ -21,7 +22,7 @@ vs     Ip：192.168.182.50:5522     root:pO8|eH2>iO5
        Ip：101.x.x.156      root:Rlytx!@#bs
        Ip：101.x.x.21       root:Rlytx!@#bs
        Ip：123.x.x.199      root:Rlytx!@#vs
-SA     Ip：192.168.181.194  root:dhU^jKy8bkl
+SA     Ip：192.168.181.194  root:MjRlYjZjMGJ
 ```
 
 
