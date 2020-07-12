@@ -13,3 +13,4 @@ done
 echo
 
 dirname $0 :取得当前执行脚本文件的父目录
+
