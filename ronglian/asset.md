@@ -8,6 +8,7 @@
 16     Ip：192.168.179.115  root:qYPTPRF4HmH
 极视角  Ip：192.168.179.133  root:YMCVg7#gX2X
 16     Ip：192.168.179.134  root:6pN35IGYZV6
+bs     Ip：192.168.179.136  root:1+2mx8m,>D
 山东    Ip：192.168.179.148  root:abcABC!@#
 bsdev  Ip：192.168.179.231  root:1+2mx8m,>D
 禅道    Ip：192.168.179.235:5522    root:rootpass
