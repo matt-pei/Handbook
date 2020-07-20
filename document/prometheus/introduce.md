@@ -24,7 +24,7 @@ Prometheus生态系统包含多个组件，其中许多是可选的：
 
 #### 机构
 下图说明了Prometheus的体系结构及其某些生态系统组件：
-<img alt="架构图" src="../../images/prometheus/architecture.png">
+<img alt="架构图" src="../../images/prometheus/architecture.png" width = "300" height = "200" />
 
 ## Catalogue
 
