@@ -45,7 +45,7 @@ Docker轻巧快速。它为基于虚拟机管理程序的虚拟机提供了可�
 ## Docker架构
 Docker使用客户端-服务器架构。Docker 客户端与Docker 守护进程进行对话，该守护进程完成了构建，运行和分发Docker容器的繁重工作。Docker客户端和守护程序可以 在同一系统上运行，也可以将Docker客户端连接到远程Docker守护程序。Docker客户端和守护程序在UNIX套接字或网络接口上使用REST API进行通信。
 
-<img alt="docker架构" src="../../images/docker/architecture.png" wigth="" height="" />
+<img alt="docker架构" src="../../images/docker/architecture.png" wigth="500" height="" />
 
 ## Docker守护程序
 Docker守护程序（dockerd）侦听Docker API请求并管理Docker对象，例如图像，容器，网络和卷。守护程序还可以与其他守护程序通信以管理Docker服务。
