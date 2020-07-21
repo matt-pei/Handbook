@@ -12,7 +12,7 @@ Prometheus: https://prometheus.io/docs/introduction/overview/
 
 
 ## Catalogue
-1. [Docker document](documente/docker/README.md)
+1. [Docker document](document/docker/README.md)
 2. [Harbor document](harbor/harbor.md)
 3. [Prometheus document](document/prometheus/introduce.md)
 4. [Kubernetes document]()
