@@ -2,7 +2,7 @@
 ```
 海尔    Ip：192.168.177.130    root:123456
 算法    Ip：192.168.177.143:5522    root:1+2mx8m,>D
-32     Ip：192.168.177.238  root:MjhiZTY2Yz
+32     Ip：192.168.177.238  root:YWRiZTIzM2U
 算法    Ip：192.168.178.131  root:1+2mx8m,>D
 16     Ip：192.168.178.120  root:aBQkB6PV0%$
 16     Ip：192.168.179.115  root:qYPTPRF4HmH
