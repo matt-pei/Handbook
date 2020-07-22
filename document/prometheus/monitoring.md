@@ -7,7 +7,7 @@ docker run -dit \
     --name prometheus\
     -p 9090:9090 \
     -v /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  \
-    prom/prometheus
+    prom/prometheus:v2.18.1
 ```
 
 #### 启动grafana
@@ -17,7 +17,7 @@ docker run -dit \
     --name grafana\
     -p 3000:3000 \
     -v /opt/grafana-storage:/var/lib/grafana \
-    grafana/grafana
+    grafana/grafana:7.1.0
 ```
 #### 启动node-exporter
 ```
