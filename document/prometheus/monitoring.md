@@ -23,6 +23,7 @@ docker run -dit \
 ```
 docker pull prom/node-exporter:v0.18.1
 docker pull prom/node-exporter:v1.0.1
+
 docker run -dit \
     --restart=always \
     --name node-exporter \
