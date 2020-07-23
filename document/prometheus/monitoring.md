@@ -29,7 +29,7 @@ docker run -dit \
     -v "/proc:/host/proc:ro" \
     -v "/sys:/host/sys:ro" \
     -v "/:/rootfs:ro" \
-    prom/node-exporter:v0.18.1
+    prom/node-exporter:v1.0.1
 ```
 
 #### 监控nvidia GPU
