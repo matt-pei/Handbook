@@ -1,7 +1,7 @@
 # Harbor
 ### Our mission is to be the trusted cloud native repository for Kubernetes
 
-<img alt="Harbor" src="../images/harbor_logo.png">
+<img alt="Harbor" src="../../images/harbor_logo.png">
 
 ---
 
