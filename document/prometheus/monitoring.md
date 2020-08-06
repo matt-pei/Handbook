@@ -12,12 +12,7 @@ docker run -dit \
 
 #### 启动grafana
 ```
-docker run -dit \
-    --restart=always \
-    --name grafana\
-    -p 3000:3000 \
-    -v /opt/grafana-storage:/var/lib/grafana \
-    grafana/grafana:7.1.0
+docker run -dit --restart always --name=grafana -p 3000:3000 -v /data/devops/grafana_storage:/var/lib/grafana grafana/grafana:6.7.4
 ```
 #### 启动node-exporter
 ```
