@@ -19,11 +19,11 @@
 * 3、`delete from tb (where)`;
     delete 也是删除表中数据，但可以与where连用，删除特定行；
     ```
-    -- 删除表中所有数据
+    删除表中所有数据
     delete from user;
     ```
     ```
-    -- 删除指定行
+    删除指定行
     delete from user where username ='Tom';
     ```
 
