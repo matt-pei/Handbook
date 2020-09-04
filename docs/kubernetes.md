@@ -92,15 +92,6 @@ systemctl daemon-reload
 systemctl restart kubelet
 
 
-
-
-
-
-
-
-
-
-
 ## 二进制部署kubernetes
 
 ```
