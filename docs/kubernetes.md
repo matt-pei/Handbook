@@ -106,7 +106,7 @@ chmod +x /usr/bin/cfssl*
 ```
 
 ```
-# 1、创建CA证书请求文件（csr）
+# 2、创建CA证书请求文件（csr）
 cat >> /opt/certs/ca-csr.json <<EOF
 {
     "CN": "kubernetes-ca",
@@ -214,6 +214,7 @@ tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
 
 # 下载etcd安装包
+```
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
@@ -221,8 +222,10 @@ mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
 ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/cert/
+```
 
 # 创建etcd系统启动服务
+```
 mkdir -p /var/lib/etcd
 cat >> /lib/systemd/system/etcd.service <<EOF
 [Unit]
@@ -263,6 +266,7 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
+```
 
 systemctl daemon-reload
 systemctl restart etcd
