@@ -94,16 +94,117 @@ systemctl restart kubelet
 
 ## 二进制部署kubernetes
 
+#### 自签CA颁发证书
 ```
 # 1、使用cfssl自签证书
+mkdir -p /opt/certs
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
-curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o cfssljson
-curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o cfssl-certinfo
+curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
+curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
+# 
+chmod +x /usr/bin/cfssl*
+```
+
+```
+# 1、创建CA证书请求文件（csr）
+cat >> /opt/certs/ca-csr.json <<EOF
+{
+    "CN": "kubernetes-ca",
+    "hosts": [
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "BeiJing",
+            "L": "BeiJing",
+            "O": "kubernetes",
+            "OU": "dotpod"
+        }
+    ],
+    "ca": {
+        "expiry": "87600h"
+    }
+}
+EOF
+# 生成CA证书和私钥
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+```
+
+```
+cat >> /opt/certs/ca-config.json <<EOF
+{
+    "signing": {
+        "default": {
+            "expiry": "87600h"
+        },
+        "profiles": {
+            "server": {
+                "expiry": "87600h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth"
+                ]
+            },
+            "client": {
+                "expiry": "87600h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "client auth"
+                ]
+            },
+            "peer": {
+                "expiry": "87600h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth",
+                    "client auth"
+                ]
+            }
+        }
+    }
+}
+EOF
+```
+
+```
+创建etcd证书请求文件
+cat >> /opt/certs/etcd-peer-csr.json <<EOF
+{
+    "CN": "k8s-etcd",
+    "hosts": [
+        "0.0.0.0",
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "BeiJing",
+            "L": "BeiJing",
+            "O": "kubernetes",
+            "OU": "dotpod"
+        }
+    ]
+}
+EOF
 ```
 
 
 
+[kubernetes]
+mkdir -p /opt/src
+# 下载kubernetes二进制文件
+wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
 
-
-
+tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
+mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
 
