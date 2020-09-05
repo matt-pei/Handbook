@@ -131,7 +131,7 @@ cat >> /opt/certs/ca-csr.json <<EOF
 }
 EOF
 # 生成CA证书和私钥
-cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+cfssl gencert -initca /opt/certs/ca-csr.json | cfssljson -bare ca
 ```
 
 ```
@@ -174,12 +174,15 @@ EOF
 ```
 
 ```
-创建etcd证书请求文件
+# 创建etcd证书请求文件
+# 实际部署中,请修改"hosts"中Ip地址
 cat >> /opt/certs/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "0.0.0.0",
+        "172.31.205.44",
+        "172.31.205.45",
+        "172.31.205.44"
     ],
     "key": {
         "algo": "rsa",
@@ -196,15 +199,73 @@ cat >> /opt/certs/etcd-peer-csr.json <<EOF
     ]
 }
 EOF
+# 签发etcd证书
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json |cfssljson -bare etcd
 ```
 
 
 
 [kubernetes]
 mkdir -p /opt/src
-# 下载kubernetes二进制文件
+# 下载kubernetes二进制包
 wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
 
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
+
+# 下载etcd安装包
+curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
+
+tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
+mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
+ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
+# 创建存放etcd证书目录
+mkdir -p /opt/src/etcd/cert/
+
+# 创建etcd系统启动服务
+mkdir -p /var/lib/etcd
+cat >> /lib/systemd/system/etcd.service <<EOF
+[Unit]
+Description=Etcd Server
+Documentation=https://github.com/coreos
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WorkingDirectory=/var/lib/etcd/
+ExecStart=/opt/src/etcd/etcd --name etcd1 \
+  --listen-peer-urls https://172.31.205.44:2380 \
+  --listen-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
+  --quota-backend-bytes 8000000000 \
+  --advertise-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
+  --initial-cluster k8s-master=https://172.31.205.44:2380,k8s-master=https://172.31.205.45:2380,k8s-master=https://172.31.205.46:2380 \
+  --data-dir /var/lib/etcd/ \
+  --initial-advertise-peer-urls https://172.31.205.44:2380 \
+  --ca-file /opt/src/etcd/cert/ca.pem \
+  --cert-file /opt/src/etcd/cert/etcd.pem \
+  --key-file /opt/src/etcd/cert/etcd-key.pem \
+  --client-cert-auth \
+  --trusted-ca-file /opt/src/etcd/cert/ca.pem \
+  --peer-ca-file /opt/src/etcd/cert/ca.pem \
+  --peer-cert-file /opt/src/etcd/cert/etcd.pem \
+  --peer-key-file /opt/src/etcd/cert/etcd-key.pem \
+  --peer-client-cert-auth \
+  --peer-trusted-ca-file /opt/src/etcd/cert/ca.pem \
+  --log-output stdout
+
+TimeoutSec=0
+RestartSec=2
+Restart=always
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl restart etcd
+systemctl enable etcd
+
 
