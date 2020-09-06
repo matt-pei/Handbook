@@ -1,4 +1,9 @@
 # 部署kubernetes
+
+<img alt="kubernetes logo" src=../images/kuernetes/name_blue.png>
+
+---
+
 kubeadm部署方式待更新
 
 ####1、关闭selinux和firewalld
