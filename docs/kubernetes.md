@@ -6,7 +6,7 @@
 
 kubeadm部署方式待更新
 
-####1、关闭selinux和firewalld
+#### 1、关闭selinux和firewalld
 ```
 # 官方说明目前暂为支持selinux,所以关闭
 setenforce 0
@@ -103,9 +103,9 @@ systemctl restart kubelet
 
 ## 二进制部署kubernetes
 
-(待更新...)环境声明：作者使用3台机器部署 `Master（etcd1）` `node01（etcd2）` `node02（etcd3)(CA)` 实际部署根据需求合理配置,
+(待更新...)环境声明：作者使用3台机器部署 `Master（etcd1）` `node01（etcd2）` `node02（etcd3)(CA)` 实际部署根据需求合理配置
 
-#### 1、自签CA颁发证书
+### 1、自签CA颁发证书
 ```
 # 1、使用cfssl自签证书
 mkdir -p /opt/certs
@@ -141,6 +141,7 @@ cat > /opt/certs/ca-csr.json <<EOF
     }
 }
 EOF
+
 # 生成CA证书和私钥
 cfssl gencert -initca /opt/certs/ca-csr.json | cfssljson -bare ca
 ```
@@ -186,7 +187,7 @@ cat > /opt/certs/ca-config.json <<EOF
 EOF
 ```
 
-#### 2、部署etcd集群
+### 2、部署etcd集群
 
 首先创建etcd的请求文件,此请求文件是由CA机器来完成
 
@@ -225,7 +226,6 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 # 2、下载etcd安装包
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
-
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
 
@@ -237,15 +237,15 @@ mkdir -p /opt/src/etcd/cert/
 ```
 
 
-⚠️ 系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
+#### ⚠️ 系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
 
---listen-peer-urls
+#### --listen-peer-urls
 
---listen-client-urls
+#### --listen-client-urls
 
---advertise-client-urls
+#### --advertise-client-urls
 
---initial-advertise-peer-urls
+#### --initial-advertise-peer-urls
 
 
 ```
@@ -312,8 +312,8 @@ ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http
 ```
 
 
-#### 3、部署apiserrver
-
+### 3、部署apiserrver
+```
 [kubernetes]
 mkdir -p /opt/src
 # 下载kubernetes二进制包
@@ -321,3 +321,6 @@ wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar
 
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
+```
+
+
