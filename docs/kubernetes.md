@@ -1,5 +1,9 @@
-## 部署kubernetes
+# 部署kubernetes
+kubeadm部署方式待更新
+
+####1、关闭selinux和firewalld
 ```
+# 官方说明目前暂为支持selinux,所以关闭
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ```
@@ -94,7 +98,9 @@ systemctl restart kubelet
 
 ## 二进制部署kubernetes
 
-#### 自签CA颁发证书
+(待更新...)环境声明：作者使用3台机器部署 `Master（etcd1）` `node01（etcd2）` `node02（etcd3)(CA)` 实际部署根据需求合理配置,
+
+#### 1、自签CA颁发证书
 ```
 # 1、使用cfssl自签证书
 mkdir -p /opt/certs
@@ -107,7 +113,7 @@ chmod +x /usr/bin/cfssl*
 
 ```
 # 2、创建CA证书请求文件（csr）
-cat >> /opt/certs/ca-csr.json <<EOF
+cat > /opt/certs/ca-csr.json <<EOF
 {
     "CN": "kubernetes-ca",
     "hosts": [
@@ -134,8 +140,10 @@ EOF
 cfssl gencert -initca /opt/certs/ca-csr.json | cfssljson -bare ca
 ```
 
+至此CA证书颁发机构完成，
+
 ```
-cat >> /opt/certs/ca-config.json <<EOF
+cat > /opt/certs/ca-config.json <<EOF
 {
     "signing": {
         "default": {
@@ -173,16 +181,20 @@ cat >> /opt/certs/ca-config.json <<EOF
 EOF
 ```
 
+#### 2、部署etcd集群
+
+首先创建etcd的请求文件,此请求文件是由CA机器来完成
+
 ```
-# 创建etcd证书请求文件
-# 实际部署中,请修改"hosts"中Ip地址
-cat >> /opt/certs/etcd-peer-csr.json <<EOF
+# 1、创建etcd证书请求文件
+# 实际部署中,请修改"hosts"参数中的etcd集群规划的ip地址
+cat > /opt/certs/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
         "172.31.205.44",
         "172.31.205.45",
-        "172.31.205.44"
+        "172.31.205.46"
     ],
     "key": {
         "algo": "rsa",
@@ -199,52 +211,57 @@ cat >> /opt/certs/etcd-peer-csr.json <<EOF
     ]
 }
 EOF
+
 # 签发etcd证书
-cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json |cfssljson -bare etcd
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
 ```
 
-
-
-[kubernetes]
-mkdir -p /opt/src
-# 下载kubernetes二进制包
-wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
-
-tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
-mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
-
-# 下载etcd安装包
 ```
+# 2、下载etcd安装包
+# 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
+
+# 为etcd做软链接,方便更新升级
 ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
+
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/cert/
 ```
 
-# 创建etcd系统启动服务
+
+⚠️ 系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
+
+--listen-peer-urls
+
+--listen-client-urls
+
+--advertise-client-urls
+
+--initial-advertise-peer-urls
+
+
 ```
-mkdir -p /var/lib/etcd
-cat >> /lib/systemd/system/etcd.service <<EOF
+# 3、创建etcd系统启动服务
+cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
 Description=Etcd Server
 Documentation=https://github.com/coreos
 After=network.target
-After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=notify
-WorkingDirectory=/var/lib/etcd/
+WorkingDirectory=/opt/src/etcd/
 ExecStart=/opt/src/etcd/etcd --name etcd1 \
   --listen-peer-urls https://172.31.205.44:2380 \
   --listen-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
   --quota-backend-bytes 8000000000 \
   --advertise-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
-  --initial-cluster k8s-master=https://172.31.205.44:2380,k8s-master=https://172.31.205.45:2380,k8s-master=https://172.31.205.46:2380 \
-  --data-dir /var/lib/etcd/ \
+  --initial-cluster etcd1=https://172.31.205.44:2380,etcd2=https://172.31.205.45:2380,etcd3=https://172.31.205.46:2380 \
+  --data-dir /opt/src/etcd/ \
   --initial-advertise-peer-urls https://172.31.205.44:2380 \
   --ca-file /opt/src/etcd/cert/ca.pem \
   --cert-file /opt/src/etcd/cert/etcd.pem \
@@ -266,10 +283,36 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
-```
 
+# 启动etcd服务
 systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
+```
 
 
+```
+# 4、查看etcd集群健康状态
+/opt/src/etcd/etcdctl cluster-health
+member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
+member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
+member ddae50d640aac69b is healthy: got healthy result from http://127.0.0.1:2379
+cluster is healthy
+
+# 查看etcd集群在线状态
+/opt/src/etcd/etcdctl member list
+26bb67943ff3802a: name=etcd2 peerURLs=https://172.31.205.45:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.45:2379 isLeader=false
+68b27ec2be75f5c1: name=etcd3 peerURLs=https://172.31.205.46:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.46:2379 isLeader=false
+ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.44:2379 isLeader=true
+```
+
+
+#### 3、部署apiserrver
+
+[kubernetes]
+mkdir -p /opt/src
+# 下载kubernetes二进制包
+wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
+
+tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
+mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
