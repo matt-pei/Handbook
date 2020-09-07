@@ -236,7 +236,7 @@ mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
 ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
 
 # 创建存放etcd证书目录
-mkdir -p /opt/src/etcd/cert/
+mkdir -p /opt/src/etcd/{cert,logs}
 ```
 
 ---
