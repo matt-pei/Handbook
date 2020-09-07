@@ -4,7 +4,8 @@
 
 ---
 
-kubeadm部署方式待更新
+kubeadm部署方式暂停更新...
+请移步下方二进制部署,优先更新二进制部署
 
 #### 1、关闭selinux和firewalld
 ```
