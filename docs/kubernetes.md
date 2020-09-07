@@ -146,7 +146,7 @@ cat > /opt/certs/ca-csr.json <<EOF
 EOF
 
 # 生成CA证书和私钥
-cfssl gencert -initca /opt/certs/ca-csr.json | cfssljson -bare ca
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ```
 
 至此CA证书颁发机构完成，
