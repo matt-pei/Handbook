@@ -239,6 +239,7 @@ ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
 mkdir -p /opt/src/etcd/cert/
 ```
 
+---
 
 #### ⚠️ 系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
 
@@ -252,7 +253,9 @@ mkdir -p /opt/src/etcd/cert/
 
 #### ⚠️ [可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第3步骤
 
-[spuervisor启动etcd服务](./supervisor.md)
+1. [spuervisor启动etcd服务](./supervisor.md)
+
+---
 
 ```
 # 3、创建etcd系统启动服务
