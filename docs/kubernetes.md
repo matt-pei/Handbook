@@ -252,7 +252,7 @@ mkdir -p /opt/src/etcd/cert/
 
 #### ⚠️ [可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第3步骤
 
-spuervisor启动etcd服务[./supervisor.md]
+[spuervisor启动etcd服务](./supervisor.md)
 
 ```
 # 3、创建etcd系统启动服务
