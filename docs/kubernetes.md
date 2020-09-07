@@ -111,6 +111,7 @@ systemctl restart kubelet
 ```
 # 1、使用cfssl自签证书
 mkdir -p /opt/certs
+cd /opt/certs
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
 curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
 curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
