@@ -105,7 +105,7 @@ systemctl restart kubelet
 
 ## 二进制部署kubernetes
 
-(待更新...)环境声明：作者使用3台机器部署 `Master（etcd1）` `node01（etcd2）` `node02（etcd3)(CA)` 实际部署根据需求合理配置
+(待更新...)环境声明：作者使用3台机器部署 `Master(etcd1)` `node01(etcd2)` `node02(etcd3、CA)` 实际部署根据需求合理配置
 
 ### 1、自签CA颁发证书
 ```
@@ -192,7 +192,7 @@ EOF
 
 ### 2、部署etcd集群
 
-首先创建etcd的请求文件,此请求文件是由CA机器来完成
+首先创建etcd的请求文件,此请求文件是在`node02(CA)`机器来完成
 
 ```
 # 1、创建etcd证书请求文件
@@ -224,6 +224,8 @@ EOF
 # 签发etcd证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
 ```
+
+etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `node02(etcd-3)`安装部署
 
 ```
 # 2、下载etcd安装包
