@@ -6,10 +6,9 @@
 
 <details>
 <summary>该configure命令支持以下参数：</summary>
-1
-2
-3
-4
+
+**<summary>标签与正文间一定要空一行！！！**
+
 </details>
 
 ```
