@@ -1,5 +1,6 @@
 #！/bin/bash
 
+# 未测试
 docker ps -a | grep -i unhealthy
 if [ $? -eq 0 ]; then
     docker restart `docker ps -a | grep -i unhealthy | awk '{print $1}'` > ./unhealthy.log
