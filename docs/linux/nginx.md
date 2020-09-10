@@ -1,5 +1,17 @@
 # Nginx配置
 
+## 从源代码构建Nginx
+
+使用configure命令配置构建,它定义了系统的各个方面，包括允许nginx用于连接处理的方法。最后，它会创建一个Makefile。
+
+<details>
+<summary>该configure命令支持以下参数：</summary>
+1
+2
+3
+4
+</details>
+
 ```
 upstream模块
 upstream name {
