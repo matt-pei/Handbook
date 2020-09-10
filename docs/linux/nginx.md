@@ -7,13 +7,14 @@
 <details>
 <summary>该configure命令支持以下参数：</summary>
 
-<summary>--help 打印帮助信息</summary>
-<summary>
+--help 打印帮助信息
+
 --prefix=path
     定义将保留服务器文件的目录,此相同目录还将用于设置的所有相对路径 configure（库源路径除外）和nginx.conf配置文件中。/usr/local/nginx默认情况下，它设置为目录。
-</summary>
-<summary>--help 打印帮助信息</summary>
-<summary>--help 打印帮助信息</summary>
+
+--help 打印帮助信息
+
+--help 打印帮助信息
 
 </details>
 
