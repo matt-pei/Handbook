@@ -105,7 +105,7 @@ systemctl restart kubelet
 
 ## 二进制部署kubernetes
 
-(待更新...)环境声明：作者使用3台机器部署 `Master(etcd1)` `node01(etcd2)` `node02(etcd3、CA)` 实际部署根据需求合理配置
+(待更新...)环境声明：作者使用3台机器部署 `Master(etcd01/CA)` `node01(etcd02)` `node02(etcd03)` 实际部署根据需求合理配置
 
 ### 1、自签CA颁发证书
 ```
@@ -192,24 +192,25 @@ EOF
 
 ### 2、部署etcd集群
 
-首先创建etcd的请求文件,此请求文件是在`node02(CA)`机器来完成
+首先创建etcd的请求文件,此请求文件是在`CA`机器上来完成
 
 ```
 # 1、创建etcd证书请求文件
-# 实际部署中,请修改"hosts"参数中的etcd集群规划的ip地址
+# 实际部署中,请修改"hosts"参数中的etcd集群规划的 准确 ip地址(非Ip地址范围)
+# 否则在启动etcd的时候会报证书相关错误
 cat > /opt/certs/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "172.31.205.44",
-        "172.31.205.45",
-        "172.31.205.46"
+        "192.168.181.194",
+        "192.168.177.238",
+        "192.168.176.107"
     ],
     "key": {
         "algo": "rsa",
         "size": 2048
     },
-    "names": [
+    "names": [d
         {
             "C": "CN",
             "ST": "BeiJing",
@@ -230,6 +231,7 @@ etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `n
 ```
 # 2、下载etcd安装包
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
+mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
@@ -271,13 +273,13 @@ Wants=network-online.target
 [Service]
 Type=notify
 WorkingDirectory=/opt/src/etcd/
-ExecStart=/opt/src/etcd/etcd --name etcd1 \
+ExecStart=/opt/src/etcd/etcd --name etcd01 \
   --listen-peer-urls https://172.31.205.44:2380 \
   --listen-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
   --quota-backend-bytes 8000000000 \
   --advertise-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
-  --initial-cluster etcd1=https://172.31.205.44:2380,etcd2=https://172.31.205.45:2380,etcd3=https://172.31.205.46:2380 \
-  --data-dir /opt/src/etcd/ \
+  --initial-cluster etcd01=https://172.31.205.44:2380,etcd02=https://172.31.205.45:2380,etcd03=https://172.31.205.46:2380 \
+  --data-dir /opt/src/etcd/data \
   --initial-advertise-peer-urls https://172.31.205.44:2380 \
   --ca-file /opt/src/etcd/cert/ca.pem \
   --cert-file /opt/src/etcd/cert/etcd.pem \
