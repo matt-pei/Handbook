@@ -14,5 +14,5 @@ Prometheus: https://prometheus.io/docs/introduction/overview/
 ## Catalogue
 1. [Docker document](docs/docker/README.md)
 2. [Harbor document](docs/harbor/harbor.md)
-3. [Prometheus document](docs/prometheus/introduce.md)
-4. [Kubernetes document](docs/kubernetes.md)
+3. [Prometheus docs](docs/prometheus/introduce.md)
+4. [Kubernetes docs](docs/kubernetes.md)
