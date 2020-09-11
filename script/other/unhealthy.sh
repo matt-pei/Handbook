@@ -1,4 +1,9 @@
 #！/bin/bash
+set -e
+
+# [ `id -u` != 0 ] && \
+#     { echo -e "\033[31m Please use root to execute this script \033[0m"
+#         exit 1; }
 
 # 未测试
 docker ps -a | grep -i unhealthy
