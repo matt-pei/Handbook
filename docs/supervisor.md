@@ -2,7 +2,7 @@
 
 使用supervisor管理启动服务
 
-## 使用supervisor托管etcd服务
+## 1\使用supervisor托管etcd服务
 
 ### 1、安装supervisor
 ```
@@ -75,8 +75,8 @@ EOF
 
 ### 4、启动etcd并检查状态
 ```
-chown -R etcd.etcd /opt/src/etcd-v3.2.31
-chown -R etcd.etcd /opt/src/etcd
+chown -R etcd:etcd /opt/src/etcd-v3.2.31
+chown -R etcd:etcd /opt/src/etcd
 # 更新supervisor配置
 supervisorctl update
 etcd01: added process group
@@ -85,3 +85,39 @@ supervisorctl status
 etcd01                            RUNNING   pid 17299, uptime 0:00:27
 ```
 
+
+
+## 2、配置apiserver启动
+
+```
+cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
+#!/bin/bash
+/opt/src/kubernetes/server/bin/./kube-apiserver \
+  --apiserver-count 1 \
+  --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \
+  --bind-address 192.168.181.194 \
+  --authorization-mode RBAC,Node \
+  --enable-bootstrap-token-auth \
+  --tls-cert-file /opt/src/kubernetes/server/bin/certs/apiserver.pem \
+  --tls-private-key-file /opt/src/kubernetes/server/bin/certs/apiserver-key.pem \
+  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --etcd-cafile /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --etcd-certfile /opt/src/kubernetes/server/bin/certs/client.pem \
+  --etcd-keyfile /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --etcd-servers https://192.168.181.194:2379,https://192.168.177.238:2379,https://192.168.176.107:2379 \
+  --service-cluster-ip-range 10.10.0.0/16 \
+  --service-node-port-range 3000-29999 \
+  --service-account-key-file /opt/src/kubernetes/server/bin/certs/ca-key.pem \
+  --target-ram-mb=1024
+  --audit-log-maxage=30 \
+  --audit-log-maxbackup=3 \
+  --audit-log-maxsize=100 \
+  --audit-log-path /data/logs/kubernetes/kube-apiserver/ \
+  --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \
+  --log-dir  /data/logs/kubernetes/kube-apiserver/ \
+  --kubelet-client-certificate /opt/src/kubernetes/server/bin/certs/client.pem \
+  --kubelet-client-key /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --v=2
+EOF
+```
