@@ -311,7 +311,9 @@ systemctl enable etcd
 
 ```
 # 4、查看etcd集群健康状态
-/opt/src/etcd/etcdctl cluster-health
+# /opt/src/etcd/etcdctl cluster-health
+ln -s /opt/src/etcd/etcdctl /usr/bin/etcdctl
+etcdctl cluster-health
 member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
 member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
 member ddae50d640aac69b is healthy: got healthy result from http://127.0.0.1:2379
@@ -325,15 +327,203 @@ ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http
 ```
 
 
-### 3、部署apiserrver
+### 3、安装部署kubernetes
+#### 1、安装k8s-apiserver
 ```
-[kubernetes]
-mkdir -p /opt/src
+# 1、[k8s-apiserver]
 # 下载kubernetes二进制包
-wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
+# wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
+curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
 
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
+ln -s /opt/src/kubernetes-v1.16.15 /opt/src/kubernetes
+
+rm -rf /opt/src/kubernetes/server/bin/*.tar
+rm -rf /opt/src/kubernetes/server/bin/*_tag
+```
+
+```
+# 2、签发client证书
+# apiserver在与etcd进行通信时，apiserver是客户端etcd是服务端，因此需要client证书。
+cat > /opt/certs/client-csr.json <<EOF
+{
+    "CN": "k8s-node",
+    "hosts": [
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "Beijing",
+            "L": "Beijing",
+            "O": "kubernetes",
+            "OU": "dotpod"
+        }
+    ]
+}
+EOF
+
+# 签发client证书
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
+```
+
+```
+# 3、签发apiserver证书
+# 当其他客户端与apiserver进行通信时也需要TLS认证，此时apiserver为服务端证书。
+cat > /opt/certs/apiserver-csr.json <<EOF
+{
+    "CN": "apiserver",
+    "hosts": [
+        "127.0.0.1",
+        "192.168.181.194",
+        "kubernetes.default",
+        "kubernetes.default.svc",
+        "kubernetes.default.svc.cluster",
+        "kubernetes.default.svc.cluster.local"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "Beijing",
+            "L": "Beijing",
+            "O": "Beijing",
+            "OU": "dotpod"
+        }
+    ]
+}
+EOF
+
+# 签发apiserver证书
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server apiserver-csr.json | cfssljson -bare apiserver
+```
+
+```
+# 4、拷贝证书
+# 创建存放证书目录
+mkdir -p /opt/src/kubernetes/server/bin/{certs,conf}
+# 配置apiserver日志审计
+cat > /opt/src/kubernetes/server/bin/conf/audit.yaml <<EOF
+apiVersion: audit.k8s.io/v1beta1 # This is required.
+kind: Policy
+# Don't generate audit events for all requests in RequestReceived stage.
+omitStages:
+  - "RequestReceived"
+rules:
+  # Log pod changes at RequestResponse level
+  - level: RequestResponse
+    resources:
+    - group: ""
+      # Resource "pods" doesn't match requests to any subresource of pods,
+      # which is consistent with the RBAC policy.
+      resources: ["pods"]
+  # Log "pods/log", "pods/status" at Metadata level
+  - level: Metadata
+    resources:
+    - group: ""
+      resources: ["pods/log", "pods/status"]
+
+  # Don't log requests to a configmap called "controller-leader"
+  - level: None
+    resources:
+    - group: ""
+      resources: ["configmaps"]
+      resourceNames: ["controller-leader"]
+
+  # Don't log watch requests by the "system:kube-proxy" on endpoints or services
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+    - group: "" # core API group
+      resources: ["endpoints", "services"]
+
+  # Don't log authenticated requests to certain non-resource URL paths.
+  - level: None
+    userGroups: ["system:authenticated"]
+    nonResourceURLs:
+    - "/api*" # Wildcard matching.
+    - "/version"
+
+  # Log the request body of configmap changes in kube-system.
+  - level: Request
+    resources:
+    - group: "" # core API group
+      resources: ["configmaps"]
+    # This rule only applies to resources in the "kube-system" namespace.
+    # The empty string "" can be used to select non-namespaced resources.
+    namespaces: ["kube-system"]
+
+  # Log configmap and secret changes in all other namespaces at the Metadata level.
+  - level: Metadata
+    resources:
+    - group: "" # core API group
+      resources: ["secrets", "configmaps"]
+
+  # Log all other resources in core and extensions at the Request level.
+  - level: Request
+    resources:
+    - group: "" # core API group
+    - group: "extensions" # Version of group should NOT be included.
+
+  # A catch-all rule to log all other requests at the Metadata level.
+  - level: Metadata
+    # Long-running requests like watches that fall under this rule will not
+    # generate an audit event in RequestReceived.
+    omitStages:
+      - "RequestReceived"
+EOF
+```
+
+```
+# 5、创建apiserver系统启动服务
+cat > /lib/systemd/system/kube-apiserver.service <<EOF
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+[Service]
+ExecStart=/opt/src/kubernetes/server/bin/./kube-apiserver \
+  --apiserver-count 1 \
+  --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \
+  --bind-address 192.168.181.194 \
+  --authorization-mode RBAC,Node \
+  --enable-bootstrap-token-auth \
+  --tls-cert-file /opt/src/kubernetes/server/bin/certs/apiserver.pem \
+  --tls-private-key-file /opt/src/kubernetes/server/bin/certs/apiserver-key.pem \
+  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --etcd-cafile /opt/src/kubernetes/server/bin/certs/ca.pem \
+  --etcd-certfile /opt/src/kubernetes/server/bin/certs/client.pem \
+  --etcd-keyfile /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --etcd-servers https://192.168.181.194:2379,https://192.168.177.238:2379,https://192.168.176.107:2379 \
+  --service-cluster-ip-range 10.10.0.0/16 \
+  --service-node-port-range 3000-29999 \
+  --service-account-key-file /opt/src/kubernetes/server/bin/certs/ca-key.pem \
+  --target-ram-mb=1024
+  --audit-log-maxage=30 \
+  --audit-log-maxbackup=3 \
+  --audit-log-maxsize=100 \
+  --audit-log-path /data/logs/kubernetes/kube-apiserver/ \
+  --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \
+  --log-dir  /data/logs/kubernetes/kube-apiserver/ \
+  --kubelet-client-certificate /opt/src/kubernetes/server/bin/certs/client.pem \
+  --kubelet-client-key /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --v=2
+Restart=on-failure
+RestartSec=5
+Type=notify
+LimitNOFILE=65536
+[Install]
+WantedBy=multi-user.target
+EOF
 ```
 
 
