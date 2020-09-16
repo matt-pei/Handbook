@@ -547,31 +547,41 @@ EOF
 ### 查看服务器资源
 ```
 # 查看cpu物理个数
-cat /proc/cpuinfo |grep 'phy'|sort|uniq
-
+cat /proc/cpuinfo | grep 'phy' | sort | uniq
 address sizes	: 46 bits physical, 48 bits virtual
 physical id	: 0
 physical id	: 1
 ```
 
 ```
-# 查看cpu物理核数
-cat /proc/cpuinfo |grep 'cores' |uniq
-
+# 查看单个cpu物理核数
+cat /proc/cpuinfo | grep 'cores' | uniq
+cpu cores	: 12
 ```
 
 ```
-# 查看cpu逻辑核数
-cat /proc/cpuinfo | grep 'processor' |wc -l
+# 查看cpu总共逻辑核数
+cat /proc/cpuinfo | grep 'processor' | wc -l
+48
 ```
 
 ```
 # 查看cpu型号
-cat /proc/cpuinfo | sort|uniq | grep 'model'
+cat /proc/cpuinfo | sort | uniq | grep 'model'
+model		: 85
+model name	: Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz
 ```
 
 ```
 # 查看服务器品牌
 grep 'DMI' /var/log/dmesg
-dmidecode |grep -A4 -i 'system information'
+[    0.000000] DMI: Dell Inc. PowerEdge R940xa/0TF0V7, BIOS 2.3.10 08/15/2019
+s
+
+dmidecode | grep -A4 -i 'system information'
+System Information
+	Manufacturer: Dell Inc.
+	Product Name: PowerEdge R940xa
+	Version: Not Specified
+	Serial Number: 1T13Z03
 ```
