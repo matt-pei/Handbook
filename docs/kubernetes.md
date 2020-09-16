@@ -527,3 +527,51 @@ EOF
 ```
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 查看服务器资源
+```
+# 查看cpu物理个数
+cat /proc/cpuinfo |grep 'phy'|sort|uniq
+
+address sizes	: 46 bits physical, 48 bits virtual
+physical id	: 0
+physical id	: 1
+```
+
+```
+# 查看cpu物理核数
+cat /proc/cpuinfo |grep 'cores' |uniq
+
+```
+
+```
+# 查看cpu逻辑核数
+cat /proc/cpuinfo | grep 'processor' |wc -l
+```
+
+```
+# 查看cpu型号
+cat /proc/cpuinfo | sort|uniq | grep 'model'
+```
+
+```
+# 查看服务器品牌
+grep 'DMI' /var/log/dmesg
+dmidecode |grep -A4 -i 'system information'
+```
