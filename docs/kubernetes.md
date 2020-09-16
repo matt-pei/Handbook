@@ -110,8 +110,8 @@ systemctl restart kubelet
 ### 1、自签CA颁发证书
 ```
 # 1、使用cfssl自签证书
-mkdir -p /opt/certs
-cd /opt/certs
+mkdir -p /opt/kubernetes/pki
+cd /opt/kubernetes/pki
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
 curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
 curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
@@ -121,7 +121,7 @@ chmod +x /usr/bin/cfssl*
 
 ```
 # 2、创建CA证书请求文件（csr）
-cat > /opt/certs/ca-csr.json <<EOF
+cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 {
     "CN": "kubernetes-ca",
     "hosts": [
@@ -133,10 +133,10 @@ cat > /opt/certs/ca-csr.json <<EOF
     "names": [
         {
             "C": "CN",
-            "ST": "BeiJing",
-            "L": "BeiJing",
+            "ST": "Beijing",
+            "L": "Beijing",
             "O": "kubernetes",
-            "OU": "dotpod"
+            "OU": "System"
         }
     ],
     "ca": {
@@ -152,7 +152,7 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 至此CA证书颁发机构完成，
 
 ```
-cat > /opt/certs/ca-config.json <<EOF
+cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
     "signing": {
         "default": {
@@ -198,25 +198,25 @@ EOF
 # 1、创建etcd证书请求文件
 # 实际部署中,请修改"hosts"参数中的etcd集群规划的 准确 ip地址(非Ip地址范围)
 # 否则在启动etcd的时候会报证书相关错误
-cat > /opt/certs/etcd-peer-csr.json <<EOF
+cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "192.168.181.194",
-        "192.168.177.238",
-        "192.168.176.107"
+        "192.168.181.211",
+        "192.168.181.212",
+        "192.168.181.213"
     ],
     "key": {
         "algo": "rsa",
         "size": 2048
     },
-    "names": [d
+    "names": [
         {
             "C": "CN",
-            "ST": "BeiJing",
-            "L": "BeiJing",
+            "ST": "Beijing",
+            "L": "Beijing",
             "O": "kubernetes",
-            "OU": "dotpod"
+            "OU": "system"
         }
     ]
 }
@@ -233,6 +233,9 @@ etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `n
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
+
+# curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
+
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
 
@@ -240,7 +243,7 @@ mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
 ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
 
 # 创建存放etcd证书目录
-mkdir -p /opt/src/etcd/{cert,logs}
+mkdir -p /opt/src/etcd/{pki,logs}
 ```
 
 ---
@@ -273,14 +276,14 @@ Wants=network-online.target
 [Service]
 Type=notify
 WorkingDirectory=/opt/src/etcd/
-ExecStart=/opt/src/etcd/etcd --name etcd01 \
-  --listen-peer-urls https://172.31.205.44:2380 \
-  --listen-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
+ExecStart=/opt/src/etcd/etcd --name etcd-01 \
+  --listen-peer-urls https://192.168.181.211:2380 \
+  --listen-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
   --quota-backend-bytes 8000000000 \
-  --advertise-client-urls https://172.31.205.44:2379,http://127.0.0.1:2379 \
-  --initial-cluster etcd01=https://172.31.205.44:2380,etcd02=https://172.31.205.45:2380,etcd03=https://172.31.205.46:2380 \
+  --advertise-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
+  --initial-cluster etcd-01=https://192.168.181.211:2380,etcd-02=https://192.168.181.212:2380,etcd-03=https://192.168.181.213:2380 \
   --data-dir /opt/src/etcd/data \
-  --initial-advertise-peer-urls https://172.31.205.44:2380 \
+  --initial-advertise-peer-urls https://192.168.181.211:2380 \
   --ca-file /opt/src/etcd/cert/ca.pem \
   --cert-file /opt/src/etcd/cert/etcd.pem \
   --key-file /opt/src/etcd/cert/etcd-key.pem \
@@ -313,6 +316,7 @@ systemctl enable etcd
 # 4、查看etcd集群健康状态
 # /opt/src/etcd/etcdctl cluster-health
 ln -s /opt/src/etcd/etcdctl /usr/bin/etcdctl
+ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
 etcdctl cluster-health
 member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
 member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
@@ -346,7 +350,7 @@ rm -rf /opt/src/kubernetes/server/bin/*_tag
 ```
 # 2、签发client证书
 # apiserver在与etcd进行通信时，apiserver是客户端etcd是服务端，因此需要client证书。
-cat > /opt/certs/client-csr.json <<EOF
+cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
     "hosts": [
@@ -361,7 +365,7 @@ cat > /opt/certs/client-csr.json <<EOF
             "ST": "Beijing",
             "L": "Beijing",
             "O": "kubernetes",
-            "OU": "dotpod"
+            "OU": "system"
         }
     ]
 }
@@ -394,8 +398,8 @@ cat > /opt/certs/apiserver-csr.json <<EOF
             "C": "CN",
             "ST": "Beijing",
             "L": "Beijing",
-            "O": "Beijing",
-            "OU": "dotpod"
+            "O": "kubernetes",
+            "OU": "system"
         }
     ]
 }
@@ -584,4 +588,11 @@ System Information
 	Product Name: PowerEdge R940xa
 	Version: Not Specified
 	Serial Number: 1T13Z03
+```
+
+```
+# 可以使用一下命令查使用CPU最多的10个进程     
+ps -aux | sort -k3nr | head -n 10
+# 可以使用一下命令查使用内存最多的10个进程     
+ps -aux | sort -k4nr | head -n 10
 ```
