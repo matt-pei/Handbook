@@ -20,20 +20,18 @@ useradd -s /sbin/nologin -M etcd
 ```
 # 添加etcd启动脚本
 cat > /opt/src/etcd/etcd-startup.sh <<EOF
-#!/bin/bash
-/opt/src/etcd/etcd --name etcd-01 \
-  --listen-peer-urls https://192.168.181.211:2380 \
-  --listen-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
+/opt/src/etcd/etcd --name etcd-03 \
+  --listen-peer-urls https://192.168.181.213:2380 \
+  --listen-client-urls https://192.168.181.213:2379,http://127.0.0.1:2379 \
   --quota-backend-bytes 8000000000 \
-  --advertise-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
+  --advertise-client-urls https://192.168.181.213:2379,http://127.0.0.1:2379 \
   --initial-cluster etcd-01=https://192.168.181.211:2380,etcd-02=https://192.168.181.212:2380,etcd-03=https://192.168.181.213:2380 \
   --data-dir /opt/src/etcd/data/ \
-  --initial-advertise-peer-urls https://192.168.181.211:2380 \
+  --initial-advertise-peer-urls https://192.168.181.213:2380 \
   --ca-file /opt/src/etcd/pki/ca.pem \
   --cert-file /opt/src/etcd/pki/etcd.pem \
   --key-file /opt/src/etcd/pki/etcd-key.pem \
-  --client-cert-auth \
-  --trusted-ca-file /opt/src/etcd/pki/ca.pem \
+  --client-cert-auth   --trusted-ca-file /opt/src/etcd/pki/ca.pem \
   --peer-ca-file /opt/src/etcd/pki/ca.pem \
   --peer-cert-file /opt/src/etcd/pki/etcd.pem \
   --peer-key-file /opt/src/etcd/pki/etcd-key.pem \
