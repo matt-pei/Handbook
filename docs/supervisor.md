@@ -75,6 +75,8 @@ EOF
 
 ***提前拷贝相关证书,否则启动报错***
 
+***证书分别为：ca.pem/etcd.pem/etcd-key.pem***
+
 ```
 chown -R etcd:etcd /opt/src/etcd-v3.2.31
 chown -R etcd:etcd /opt/src/etcd
@@ -92,7 +94,9 @@ etcd-01                          RUNNING   pid 12339, uptime 0:00:45
 
 ### 1、创建apiserver启动脚本
 
-从CA机器拷贝client证书和apiserver证书到指定目录下
+***提前拷贝相关证书,否则启动报错***
+
+***证书分别为：ca.pem/ca-key.pem/client.pem/client-key.pem/apiserver.pem/apiserver-key.pem/***
 
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
@@ -131,6 +135,7 @@ chmod +x /opt/src/kubernetes/server/bin/kube-apiserver.sh
 
 ### 2、创建supervisor启动etcd配置
 ```
+# 创建apiserver日志目录
 mkdir -p /data/kubernetes/logs/kube-apiserver/
 
 cat > /etc/supervisord.d/kube-apiserver.ini <<EOF
@@ -153,4 +158,25 @@ stdout_logfile_backups=4                                        ; # of stdout lo
 stdout_capture_maxbytes=1MB                                     ; number of bytes in 'capturemode' (default 0)
 stdout_events_enabled=false                                     ; emit events on stdout writes (default false)
 EOF
+```
+
+### 3、启动etcd并检查状态
+
+```
+# 更新supervisor配置
+supervisorctl update
+# 查看启动状态
+supervisorctl status
+etcd-01                          RUNNING   pid 12339, uptime 1 day, 8:03:25
+kube-apiserver                   RUNNING   pid 17195, uptime 0:01:24
+
+netstat -anpt | grep 6443
+tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
+tcp        0      0 192.168.181.211:6443    192.168.181.211:39948   ESTABLISHED 17197/kube-apiserve
+tcp        0      0 192.168.181.211:39948   192.168.181.211:6443    ESTABLISHED 17197/kube-apiserve
+或
+netstat -lntpu | grep kube-api
+tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
+tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      17197/kube-apiserve
+
 ```
