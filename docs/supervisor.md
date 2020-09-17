@@ -95,10 +95,10 @@ etcd-01                          RUNNING   pid 12339, uptime 0:00:45
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
 #!/bin/bash
-/opt/src/kubernetes/server/bin/./kube-apiserver \
+/opt/src/kubernetes/server/bin/kube-apiserver \
   --apiserver-count 1 \
   --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \
-  --bind-address 192.168.181.194 \
+  --bind-address 192.168.181.211 \
   --authorization-mode RBAC,Node \
   --enable-bootstrap-token-auth \
   --tls-cert-file /opt/src/kubernetes/server/bin/pki/apiserver.pem \
@@ -108,7 +108,7 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \
   --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \
   --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \
-  --etcd-servers https://192.168.181.194:2379,https://192.168.177.238:2379,https://192.168.176.107:2379 \
+  --etcd-servers https://192.168.181.211:2379,https://192.168.181.212:2379,https://192.168.181.213:2379 \
   --service-cluster-ip-range 10.10.0.0/16 \
   --service-node-port-range 3000-29999 \
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \
