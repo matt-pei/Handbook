@@ -122,9 +122,9 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --audit-log-maxage=30 \\
   --audit-log-maxbackup=3 \\
   --audit-log-maxsize=100 \\
-  --audit-log-path /data/logs/kubernetes/kube-apiserver/ \\
+  --audit-log-path /data/kubernetes/logs/kube-apiserver/ \\
   --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \\
-  --log-dir  /data/logs/kubernetes/kube-apiserver/ \\
+  --log-dir  /data/kubernetes/logs/kube-apiserver/ \\
   --kubelet-client-certificate /opt/src/kubernetes/server/bin/pki/client.pem \\
   --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem \\
   --v=2
@@ -167,8 +167,8 @@ EOF
 supervisorctl update
 # 查看启动状态
 supervisorctl status
-etcd-01                          RUNNING   pid 12339, uptime 1 day, 8:03:25
-kube-apiserver                   RUNNING   pid 17195, uptime 0:01:24
+etcd-01                          RUNNING   pid 714, uptime 0:00:45
+kube-apiserver                   RUNNING   pid 715, uptime 0:00:45
 
 netstat -anpt | grep 6443
 tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
