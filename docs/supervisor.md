@@ -112,7 +112,7 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --service-cluster-ip-range 10.10.0.0/16 \
   --service-node-port-range 3000-29999 \
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \
-  --target-ram-mb=1024
+  --target-ram-mb=1024 \
   --audit-log-maxage=30 \
   --audit-log-maxbackup=3 \
   --audit-log-maxsize=100 \
@@ -123,4 +123,6 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem \
   --v=2
 EOF
+
+chmod +x /opt/src/kubernetes/server/bin/kube-apiserver.sh
 ```
