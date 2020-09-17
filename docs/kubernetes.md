@@ -379,7 +379,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=clie
 ```
 # 3、签发apiserver证书
 # 当其他客户端与apiserver进行通信时也需要TLS认证，此时apiserver为服务端证书。
-cat > /opt/certs/apiserver-csr.json <<EOF
+cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
 {
     "CN": "apiserver",
     "hosts": [
@@ -413,7 +413,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 ```
 # 4、拷贝证书
 # 创建存放证书目录
-mkdir -p /opt/src/kubernetes/server/bin/{certs,conf}
+mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
 # 配置apiserver日志审计
 cat > /opt/src/kubernetes/server/bin/conf/audit.yaml <<EOF
 apiVersion: audit.k8s.io/v1beta1 # This is required.
