@@ -90,6 +90,8 @@ etcd-01                          RUNNING   pid 12339, uptime 0:00:45
 
 ## 2、配置apiserver启动
 
+从CA机器拷贝client证书和apiserver证书到指定目录下
+
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
 #!/bin/bash
@@ -99,17 +101,17 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --bind-address 192.168.181.194 \
   --authorization-mode RBAC,Node \
   --enable-bootstrap-token-auth \
-  --tls-cert-file /opt/src/kubernetes/server/bin/certs/apiserver.pem \
-  --tls-private-key-file /opt/src/kubernetes/server/bin/certs/apiserver-key.pem \
-  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --etcd-cafile /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --etcd-certfile /opt/src/kubernetes/server/bin/certs/client.pem \
-  --etcd-keyfile /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --tls-cert-file /opt/src/kubernetes/server/bin/pki/apiserver.pem \
+  --tls-private-key-file /opt/src/kubernetes/server/bin/pki/apiserver-key.pem \
+  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \
+  --client-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \
+  --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \
+  --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \
+  --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \
   --etcd-servers https://192.168.181.194:2379,https://192.168.177.238:2379,https://192.168.176.107:2379 \
   --service-cluster-ip-range 10.10.0.0/16 \
   --service-node-port-range 3000-29999 \
-  --service-account-key-file /opt/src/kubernetes/server/bin/certs/ca-key.pem \
+  --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \
   --target-ram-mb=1024
   --audit-log-maxage=30 \
   --audit-log-maxbackup=3 \
@@ -117,8 +119,8 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --audit-log-path /data/logs/kubernetes/kube-apiserver/ \
   --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \
   --log-dir  /data/logs/kubernetes/kube-apiserver/ \
-  --kubelet-client-certificate /opt/src/kubernetes/server/bin/certs/client.pem \
-  --kubelet-client-key /opt/src/kubernetes/server/bin/certs/client-key.pem \
+  --kubelet-client-certificate /opt/src/kubernetes/server/bin/pki/client.pem \
+  --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem \
   --v=2
 EOF
 ```
