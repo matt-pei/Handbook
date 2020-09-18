@@ -186,6 +186,10 @@ tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      
 
 ## 3、配置kube-controller启动
 
+> ⚠️注意
+>
+> 下面启动脚本中`service-cluster-ip-range`参数一定要与安装apiserver启动相同参数一致
+
 ```
 # 创建日志目录
 mkdir -p /data/kubernetes/logs/kube-controller-manager
