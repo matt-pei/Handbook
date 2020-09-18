@@ -98,7 +98,8 @@ etcd-01                          RUNNING   pid 12339, uptime 0:00:45
 
 ***证书分别为：ca.pem/ca-key.pem/client.pem/client-key.pem/apiserver.pem/apiserver-key.pem/***
 
-> WARNING  在启动脚本中`service-cluster-ip-range`参数设置Ip段的时候,是给集群中`service`设置的。同下面kube-controller相同参数
+> WARNING
+> 在此下面启动脚本中`service-cluster-ip-range`参数设置Ip段的时候,是给集群中`service`设置的。和安装kube-controller中等同参数
 
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
