@@ -98,6 +98,8 @@ etcd-01                          RUNNING   pid 12339, uptime 0:00:45
 
 ***证书分别为：ca.pem/ca-key.pem/client.pem/client-key.pem/apiserver.pem/apiserver-key.pem/***
 
+<font color=red size=4 face=“黑体”>WARNING</font>
+
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
 #!/bin/bash
@@ -178,5 +180,25 @@ tcp        0      0 192.168.181.211:39948   192.168.181.211:6443    ESTABLISHED 
 netstat -lntpu | grep kube-api
 tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
 tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      17197/kube-apiserve
+```
+
+## 3、配置kube-controller启动
 
 ```
+# 创建日志目录
+mkdir -p /data/kubernetes/logs/kube-controller-manager
+
+cat > /opt/src/kubernetes/server/bin/kube-controller-manager.sh <<EOF
+#!/bin/sh
+/opt/src/kubernetes/server/bin/kube-apiserver \\
+  --cluster-cidr 172.16.0.0/16 \
+  --leader-elect true \
+  --log-dir /data/kubernetes/logs/kube-controller-manager \
+  --master http://127.0.0.1:8080 \
+  --service-account-private-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \
+  --service-cluster-ip-range 10.10.0.0/16 \
+  --root-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \
+  --v 2 
+```
+
+
