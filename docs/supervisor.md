@@ -253,7 +253,7 @@ kube-controller-manager          RUNNING   pid 3127, uptime 0:01:13
 
 ---
 
-## 3、配置kube-scheduler启动
+## 4、配置kube-scheduler启动
 
 ### 1、创建启动脚本
 ```
@@ -307,8 +307,16 @@ kube-controller-manager          RUNNING   pid 3127, uptime 0:18:56
 kube-scheduler                   RUNNING   pid 22064, uptime 0:00:32
 ```
 
-## 4、给kubectl创建软连接
+### 4、创建kubectl软链接和检查集群状态
 ```
 ln -s /opt/src/kubernetes/server/bin/kubectl /usr/local/sbin/
+# 检查集群状态
+kubectl get cs
+kubectl get cs -o yaml
 ```
+
+---
+---
+
+## 5、安装node节点
 

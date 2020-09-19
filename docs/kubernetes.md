@@ -331,7 +331,7 @@ ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http
 ```
 
 
-### 3、安装部署kubernetes
+### 3、安装Master节点
 #### 1、安装k8s-apiserver
 ```
 # 1、[k8s-apiserver]
@@ -531,6 +531,43 @@ WantedBy=multi-user.target
 EOF
 ```
 
+---
+---
+
+### 4、安装Node节点
+
+> node节点上需要安装的组件为：kubelet和kubeproxy
+
+#### 1、安装部署kubelet
+
+> 安装前需要先在CA节点给kubelet签发证书
+
+```
+$$ 签发kubelet证书
+cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
+{
+    "CN": "k8s-kubelet",
+    "hosts": [
+    "192.168.181.194",
+    "192.168.181.212",
+    "192.168.181.213"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "Beijing",
+            "L": "Beijing",
+            "O": "kubernetes",
+            "OU": "system"
+        }
+    ]
+}
+EOF
+```
 
 
 
