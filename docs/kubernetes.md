@@ -539,7 +539,9 @@ cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 > head -c 16 /dev/urandom | od -An -t x | tr -d ' '
 > 
 > cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
+> 
 > 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
+> 
 > EOF
 
 
