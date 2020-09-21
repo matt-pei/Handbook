@@ -102,10 +102,29 @@ systemctl enable --now kubelet
 systemctl daemon-reload
 systemctl restart kubelet
 
+---
 
 ## 二进制部署kubernetes
 
-(待更新...)环境声明：作者使用3台机器部署 `Master(etcd-01/CA)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置
+(待更新...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
+
+> 建议统一主机名
+
+```
+hostnamectl set-hostname --static k8s-master && bash
+hostnamectl set-hostname --static k8s-node01 && bash
+hostnamectl set-hostname --static k8s-node02 && bash
+# 显示当前主机名设置
+hostnamectl status
+# 设置 hostname 解析
+echo "127.0.0.1   $(hostname)" >> /etc/hosts
+# 设置集群主机名解析
+echo "172.31.205.47   k8s-master" >> /etc/hosts
+echo "172.31.205.48   k8s-node01" >> /etc/hosts
+echo "172.31.205.49   k8s-node02" >> /etc/hosts
+# 查看配置
+cat /etc/hosts
+```
 
 ### 1、自签CA颁发证书
 ```
@@ -115,7 +134,7 @@ cd /opt/kubernetes/pki
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
 curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
 curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
-# 
+# 添加执行权限
 chmod +x /usr/bin/cfssl*
 ```
 
@@ -144,12 +163,11 @@ cat > /opt/kubernetes/pki/ca-csr.json <<EOF
     }
 }
 EOF
-
 # 生成CA证书和私钥
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ```
 
-至此CA证书颁发机构完成，
+至此CA证书自签发完成
 
 ```
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
@@ -190,6 +208,9 @@ cat > /opt/kubernetes/pki/ca-config.json <<EOF
 EOF
 ```
 
+---
+---
+
 ### 2、部署etcd集群
 
 首先创建etcd的请求文件,此请求文件是在`CA`机器上来完成
@@ -202,9 +223,9 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "192.168.181.211",
-        "192.168.181.212",
-        "192.168.181.213"
+        "172.31.205.47",
+        "172.31.205.48",
+        "172.31.205.49"
     ],
     "key": {
         "algo": "rsa",
@@ -216,7 +237,7 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
             "ST": "Beijing",
             "L": "Beijing",
             "O": "kubernetes",
-            "OU": "system"
+            "OU": "System"
         }
     ]
 }
@@ -238,10 +259,8 @@ curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-l
 
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
-
 # 为etcd做软链接,方便更新升级
 ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
-
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
 ```
@@ -262,10 +281,24 @@ mkdir -p /opt/src/etcd/{pki,logs}
 
 1. [spuervisor启动etcd服务](./supervisor.md)
 
----
+```
+# 3、拷贝证书
+# master
+cp /opt/kubernetes/pki/ca.pem /opt/src/etcd/pki/
+cp /opt/kubernetes/pki/etcd.pem /opt/src/etcd/pki/
+cp /opt/kubernetes/pki/etcd-key.pem /opt/src/etcd/pki/
+# node01
+scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/etcd.pem k8s-node01:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/etcd-key.pem k8s-node01:/opt/src/etcd/pki/
+# node02
+scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/etcd.pem k8s-node02:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
+```
 
 ```
-# 3、创建etcd系统启动服务
+# 4、创建etcd系统启动服务
 cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
 Description=Etcd Server
@@ -276,24 +309,23 @@ Wants=network-online.target
 [Service]
 Type=notify
 WorkingDirectory=/opt/src/etcd/
-ExecStart=/opt/src/etcd/etcd --name etcd-01 \
-  --listen-peer-urls https://192.168.181.211:2380 \
-  --listen-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
-  --quota-backend-bytes 8000000000 \
-  --advertise-client-urls https://192.168.181.211:2379,http://127.0.0.1:2379 \
-  --initial-cluster etcd-01=https://192.168.181.211:2380,etcd-02=https://192.168.181.212:2380,etcd-03=https://192.168.181.213:2380 \
-  --data-dir /opt/src/etcd/data \
-  --initial-advertise-peer-urls https://192.168.181.211:2380 \
-  --ca-file /opt/src/etcd/cert/ca.pem \
-  --cert-file /opt/src/etcd/cert/etcd.pem \
-  --key-file /opt/src/etcd/cert/etcd-key.pem \
-  --client-cert-auth \
-  --trusted-ca-file /opt/src/etcd/cert/ca.pem \
-  --peer-ca-file /opt/src/etcd/cert/ca.pem \
-  --peer-cert-file /opt/src/etcd/cert/etcd.pem \
-  --peer-key-file /opt/src/etcd/cert/etcd-key.pem \
-  --peer-client-cert-auth \
-  --peer-trusted-ca-file /opt/src/etcd/cert/ca.pem \
+ExecStart=/opt/src/etcd/etcd --name etcd-01 \\
+  --listen-peer-urls https://172.31.205.47:2380 \\
+  --listen-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
+  --quota-backend-bytes 8000000000 \\
+  --advertise-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
+  --initial-cluster etcd-01=https://172.31.205.47:2380,etcd-02=https://172.31.205.48:2380,etcd-03=https://172.31.205.49:2380 \\
+  --data-dir /opt/src/etcd/data/ \\
+  --initial-advertise-peer-urls https://172.31.205.47:2380 \\
+  --ca-file /opt/src/etcd/pki/ca.pem \\
+  --cert-file /opt/src/etcd/pki/etcd.pem \\
+  --key-file /opt/src/etcd/pki/etcd-key.pem \\
+  --client-cert-auth   --trusted-ca-file /opt/src/etcd/pki/ca.pem \\
+  --peer-ca-file /opt/src/etcd/pki/ca.pem \\
+  --peer-cert-file /opt/src/etcd/pki/etcd.pem \\
+  --peer-key-file /opt/src/etcd/pki/etcd-key.pem \\
+  --peer-client-cert-auth \\
+  --peer-trusted-ca-file /opt/src/etcd/pki/ca.pem \\
   --log-output stdout
 
 TimeoutSec=0
@@ -313,7 +345,7 @@ systemctl enable etcd
 
 
 ```
-# 4、查看etcd集群健康状态
+# 5、查看etcd集群健康状态
 # /opt/src/etcd/etcdctl cluster-health
 ln -s /opt/src/etcd/etcdctl /usr/bin/etcdctl
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
@@ -330,6 +362,8 @@ cluster is healthy
 ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.44:2379 isLeader=true
 ```
 
+---
+---
 
 ### 3、安装Master节点
 #### 1、安装k8s-apiserver
@@ -343,7 +377,7 @@ curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
 mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
 ln -s /opt/src/kubernetes-v1.16.15 /opt/src/kubernetes
-
+# 删除无用的镜像文件
 rm -rf /opt/src/kubernetes/server/bin/*.tar
 rm -rf /opt/src/kubernetes/server/bin/*_tag
 ```
@@ -355,6 +389,9 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
     "hosts": [
+    "172.31.205.47",
+    "172.31.205.48",
+    "172.31.205.49"
     ],
     "key": {
         "algo": "rsa",
@@ -366,7 +403,7 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
             "ST": "Beijing",
             "L": "Beijing",
             "O": "kubernetes",
-            "OU": "system"
+            "OU": "System"
         }
     ]
 }
@@ -384,7 +421,7 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     "CN": "apiserver",
     "hosts": [
         "127.0.0.1",
-        "192.168.181.194",
+        "172.31.205.47",
         "kubernetes.default",
         "kubernetes.default.svc",
         "kubernetes.default.svc.cluster",
@@ -400,7 +437,7 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
             "ST": "Beijing",
             "L": "Beijing",
             "O": "kubernetes",
-            "OU": "system"
+            "OU": "System"
         }
     ]
 }
@@ -488,6 +525,24 @@ EOF
 ```
 
 ```
+# 拷贝证书
+cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/ca-key.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/client-key.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/apiserver.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
+```
+
+
+> 生成token
+> head -c 16 /dev/urandom | od -An -t x | tr -d ' '
+> cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
+> 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
+> EOF
+
+
+```
 # 5、创建apiserver系统启动服务
 cat > /lib/systemd/system/kube-apiserver.service <<EOF
 [Unit]
@@ -495,32 +550,33 @@ Description=Kubernetes API Server
 Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 After=network.target
 [Service]
-ExecStart=/opt/src/kubernetes/server/bin/./kube-apiserver \
-  --apiserver-count 1 \
-  --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \
-  --bind-address 192.168.181.194 \
-  --authorization-mode RBAC,Node \
-  --enable-bootstrap-token-auth \
-  --tls-cert-file /opt/src/kubernetes/server/bin/certs/apiserver.pem \
-  --tls-private-key-file /opt/src/kubernetes/server/bin/certs/apiserver-key.pem \
-  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --client-ca-file /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --etcd-cafile /opt/src/kubernetes/server/bin/certs/ca.pem \
-  --etcd-certfile /opt/src/kubernetes/server/bin/certs/client.pem \
-  --etcd-keyfile /opt/src/kubernetes/server/bin/certs/client-key.pem \
-  --etcd-servers https://192.168.181.194:2379,https://192.168.177.238:2379,https://192.168.176.107:2379 \
-  --service-cluster-ip-range 10.10.0.0/16 \
-  --service-node-port-range 3000-29999 \
-  --service-account-key-file /opt/src/kubernetes/server/bin/certs/ca-key.pem \
-  --target-ram-mb=1024
-  --audit-log-maxage=30 \
-  --audit-log-maxbackup=3 \
-  --audit-log-maxsize=100 \
-  --audit-log-path /data/logs/kubernetes/kube-apiserver/ \
-  --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \
-  --log-dir  /data/logs/kubernetes/kube-apiserver/ \
-  --kubelet-client-certificate /opt/src/kubernetes/server/bin/certs/client.pem \
-  --kubelet-client-key /opt/src/kubernetes/server/bin/certs/client-key.pem \
+ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
+  --apiserver-count 1 \\
+  --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \\
+  --bind-address 172.31.205.47 \\
+  --authorization-mode RBAC,Node \\
+  --enable-bootstrap-token-auth true \\
+  --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
+  --tls-cert-file /opt/src/kubernetes/server/bin/pki/apiserver.pem \\
+  --tls-private-key-file /opt/src/kubernetes/server/bin/pki/apiserver-key.pem \\
+  --requestheader-client-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \\
+  --client-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \\
+  --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \\
+  --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \\
+  --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \\
+  --etcd-servers https://172.31.205.47:2379,https://172.31.205.48:2379,https://172.31.205.49:2379 \\
+  --service-cluster-ip-range 10.10.0.0/16 \\
+  --service-node-port-range 3000-29999 \\
+  --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
+  --target-ram-mb=1024 \\
+  --audit-log-maxage=30 \\
+  --audit-log-maxbackup=3 \\
+  --audit-log-maxsize=100 \\
+  --audit-log-path /data/kubernetes/logs/kube-apiserver/ \\
+  --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \\
+  --log-dir  /data/kubernetes/logs/kube-apiserver/ \\
+  --kubelet-client-certificate /opt/src/kubernetes/server/bin/pki/client.pem \\
+  --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem \\
   --v=2
 Restart=on-failure
 RestartSec=5
@@ -529,6 +585,10 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
+# 启动apiserver服务
+systemctl daemon-reload
+systemctl restart kube-apiserver
+systemctl enable kube-apiserver
 ```
 
 ---
@@ -536,21 +596,35 @@ EOF
 
 ### 4、安装Node节点
 
-> node节点上需要安装的组件为：kubelet和kubeproxy
+> node节点上需要安装的组件为：kubelet、kubeproxy和docker
 
 #### 1、安装部署kubelet
 
 > 安装前需要先在CA节点给kubelet签发证书
 
 ```
-$$ 签发kubelet证书
+# 下载kubernetes-node
+curl -L https://dl.k8s.io/v1.16.15/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz
+
+# 下载kubernetes-node v18.9
+# curl -L https://dl.k8s.io/v1.18.9/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz 
+
+tar zxf /opt/src/kubernetes-node-linux-amd64.tar.gz -C /opt/src/
+mv /opt/src/kubernetes /opt/src/kubernetes-node-v1.16.15
+ln -s /opt/src/kubernetes-node-v1.16.15/ /opt/src/kubernetes-node
+# 创建目录
+mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
+```
+
+```
+# 签发kubelet证书
 cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
     "CN": "k8s-kubelet",
     "hosts": [
-    "192.168.181.194",
-    "192.168.181.212",
-    "192.168.181.213"
+    "172.31.205.47",
+    "172.31.205.48",
+    "172.31.205.49"
     ],
     "key": {
         "algo": "rsa",
@@ -562,23 +636,114 @@ cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
             "ST": "Beijing",
             "L": "Beijing",
             "O": "kubernetes",
-            "OU": "system"
+            "OU": "System"
         }
     ]
 }
 EOF
+# 签发kubelet证书
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server kubelet-csr.json | cfssljson -bare kubelet
 ```
 
+拷贝证书到node节点上对应存放证书目录下
+
+```
+# 创建kubelet软链接
+ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
+```
+
+#### 2、创建kubelet相关配置
+
+#### set-cluster
+```
+# 指定apiserver的地址和证书位置
+cd /opt/src/kubernetes-node/node/bin/conf/
+
+kubectl config set-cluster myk8s \
+--certificate-authority=/opt/src/kubernetes-node/node/bin/pki/ca.pem \
+--embed-certs=true \
+--server=https://192.168.181.211:6443 \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### set-credentials
+```
+# 设置客户端认证参数，指定client证书和秘钥
+kubectl config set-credentials k8s-node \
+--client-certificate=/opt/src/kubernetes-node/node/bin/pki/client.pem \
+--client-key=/opt/src/kubernetes-node/node/bin/pki/client-key.pem \
+--embed-certs=true \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### set-context
+```
+# 关联用户和集群
+kubectl config set-context k8s-context \
+--cluster=myk8s \
+--user=k8s-node \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### use-context
+```
+# 设置当前上下文
+kubectl config use-context k8s-context --kubeconfig=kubelet.kubeconfig
+```
+
+#### 创建k8s-node.yaml
+```
+cat > /opt/src/kubernetes-node/node/bin/conf/k8s-node.yaml <<EOF
+cat > /opt/src/kubernetes/server/bin/conf/k8s-node.yaml <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:node
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: k8s-node
+EOF
+
+kubectl create -f k8s-node.yaml
+```
+
+> kubectl create clusterrolebinding k8s-node \
+--clusterrole=system:node-bootstrapper \
+--user=k8s-node
 
 
+#### 3、创建kubelet启动脚本
+```
+mkdir -p /data/kubernetes/logs/kubelet
 
+cat > /opt/src/kubernetes-node/node/bin/kubelet.sh <<EOF
+#!/bin/bash
+/opt/src/kubernetes-node/node/bin/kubelet \
+  --anonymous-auth=false \
+  --cgroup-driver systemd \
+  --cluster-dns 192.168.0.2 \
+  --cluster-domain cluster.local \
+  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \
+  --fail-swap-on="false" \
+  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \
+  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \
+  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pli/kubelet-key.pem \
+  --hostname-override AI-213 \
+  --image-gc-high-threshold 20 \
+  --image-gc-low-threshold 10 \
+  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \
+  --log-dir /data/kubernetes/logs/kubelet \
+  --pod-infra-container-image harbor.phc-dow.com/public/pause:latest \
+  --root-dir /data/kubernetes/logs/kubelet
+EOF
 
-
-
-
-
-
-
+chmod +x /opt/src/kubernetes-node/node/bin/kubelet.sh
+```
 
 
 
