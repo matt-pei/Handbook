@@ -254,7 +254,6 @@ etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `n
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
-
 # curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
 tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
@@ -264,6 +263,12 @@ ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
 ```
+
+> 如果下载非常慢尝试使用华为源：
+> 
+> curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
+>
+> curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
 ---
 
