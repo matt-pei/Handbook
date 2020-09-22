@@ -6,7 +6,7 @@
 
 ## 二进制部署kubernetes
 
-(待更新...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
+(更新中...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
 
 > 建议统一主机名
 
