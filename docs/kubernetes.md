@@ -4,106 +4,6 @@
 
 ---
 
-kubeadm部署方式暂停更新...
-
-请移步下方二进制部署,优先更新二进制部署
-
-#### 1、关闭selinux和firewalld
-```
-# 官方说明目前暂为支持selinux,所以关闭
-setenforce 0
-sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-```
-
-```
-systemctl stop firewalld.service
-systemctl disable firewalld.service
-
-# 关闭swap交换分区
-swapoff -a          # 临时关闭
-# vim /etc/fstab    # 永久关闭,注释swap行
-sed -i 's/.*swap.*/#&/' /etc/fstab
-yes | cp /etc/fstab /etc/fstab_bak
-cat /etc/fstab_bak |grep -v swap > /etc/fstab
-```
-
-```
-# 卸载旧docker版本
-yum -y remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
-# 删除旧docker存储库
-rm -rf /etc/yum.repos.d/docker*.repo
-# Install Docker CE
-yum install -y yum-utils device-mapper-persistent-data lvm2
-### Add Docker repository.
-yum-config-manager --add-repo \
-  https://download.docker.com/linux/centos/docker-ce.repo
-```
-
-```
-## Install Docker CE.
-yum install -y docker-ce-19.03.8 docker-ce-cli-19.03.8 containerd.io-1.2.13
-# yum -y install docker-ce-19.03.4 docker-ce-cli-19.03.4 containerd.io-1.2.10
-## Create /etc/docker directory.
-mkdir /etc/docker
-```
-
-```
-# Set up the Docker daemon
-cat > /etc/docker/daemon.json <<EOF
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "graph": "/data/docker_storage",
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
-  "storage-driver": "overlay2",
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
-}
-EOF
-```
-
-```
-mkdir -p /etc/systemd/system/docker.service.d
-# Restart Docker
-systemctl daemon-reload
-systemctl restart docker
-systemctl enable docker
-```
-
-
-
-```
-cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
-EOF
-```
-
-```
-cat <<EOF >  /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-EOF
-sysctl --system
-```
-
-yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-
-systemctl enable --now kubelet
-
-systemctl daemon-reload
-systemctl restart kubelet
-
----
-
 ## 二进制部署kubernetes
 
 (待更新...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
@@ -806,3 +706,105 @@ ps -aux | sort -k3nr | head -n 10
 # 可以使用一下命令查使用内存最多的10个进程     
 ps -aux | sort -k4nr | head -n 10
 ```
+
+---
+
+kubeadm部署方式暂停更新...
+
+请移步下方二进制部署,优先更新二进制部署
+
+#### 1、关闭selinux和firewalld
+```
+# 官方说明目前暂为支持selinux,所以关闭
+setenforce 0
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+```
+
+```
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+
+# 关闭swap交换分区
+swapoff -a          # 临时关闭
+# vim /etc/fstab    # 永久关闭,注释swap行
+sed -i 's/.*swap.*/#&/' /etc/fstab
+yes | cp /etc/fstab /etc/fstab_bak
+cat /etc/fstab_bak |grep -v swap > /etc/fstab
+```
+
+```
+# 卸载旧docker版本
+yum -y remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+# 删除旧docker存储库
+rm -rf /etc/yum.repos.d/docker*.repo
+# Install Docker CE
+yum install -y yum-utils device-mapper-persistent-data lvm2
+### Add Docker repository.
+yum-config-manager --add-repo \
+  https://download.docker.com/linux/centos/docker-ce.repo
+```
+
+```
+## Install Docker CE.
+yum install -y docker-ce-19.03.8 docker-ce-cli-19.03.8 containerd.io-1.2.13
+# yum -y install docker-ce-19.03.4 docker-ce-cli-19.03.4 containerd.io-1.2.10
+## Create /etc/docker directory.
+mkdir /etc/docker
+```
+
+```
+# Set up the Docker daemon
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "graph": "/data/docker_storage",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOF
+```
+
+```
+mkdir -p /etc/systemd/system/docker.service.d
+# Restart Docker
+systemctl daemon-reload
+systemctl restart docker
+systemctl enable docker
+```
+
+
+
+```
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+EOF
+```
+
+```
+cat <<EOF >  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+```
+
+yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+
+systemctl enable --now kubelet
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+---
