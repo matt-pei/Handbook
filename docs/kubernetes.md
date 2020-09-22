@@ -89,7 +89,7 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 至此CA证书自签发完成
 
 ```
-# 创创建基于根证书的config配置文件
+# 创建基于根证书的config配置文件
 
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
@@ -175,6 +175,7 @@ etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `n
 ```
 # 2、下载etcd安装包
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
+
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
@@ -184,9 +185,10 @@ mv /opt/src/etcd-v3.3.25-linux-amd64 /opt/src/etcd-v3.3.25
 ln -s /opt/src/etcd-v3.3.25 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
+
 ```
 
-> 如果下载非常慢尝试使用华为源：
+> 如果GitHub下载非常慢,可以尝试使用华为源：
 > 
 > curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 >
@@ -194,19 +196,21 @@ mkdir -p /opt/src/etcd/{pki,logs}
 
 ---
 
-#### ⚠️ 系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
+***警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：***
 
-#### --listen-peer-urls
+***--listen-peer-urls***
 
-#### --listen-client-urls
+***--listen-client-urls***
 
-#### --advertise-client-urls
+***--advertise-client-urls***
 
-#### --initial-advertise-peer-urls
+***--initial-advertise-peer-urls***
 
-#### ⚠️ [可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第3步骤
+***[可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第3步骤***
 
-1. [spuervisor启动etcd服务](./supervisor.md)
+1. [通过spuervisor启动服务](./supervisor.md)
+
+> 建议配置system和supervisor两个启动服务配置,保证服务可靠性
 
 ```
 # 3、拷贝证书
@@ -226,6 +230,7 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 
 ```
 # 4、创建etcd系统启动服务
+
 cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
 Description=Etcd Server
@@ -263,18 +268,16 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
-
 # 启动etcd服务
 systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
-```
 
+```
 
 ```
 # 5、查看etcd集群健康状态
 # /opt/src/etcd/etcdctl cluster-health
-ln -s /opt/src/etcd/etcdctl /usr/bin/etcdctl
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
 etcdctl cluster-health
 member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
@@ -283,7 +286,7 @@ member ddae50d640aac69b is healthy: got healthy result from http://127.0.0.1:237
 cluster is healthy
 
 # 查看etcd集群在线状态
-/opt/src/etcd/etcdctl member list
+etcdctl member list
 cfeb24d3c6969a88: name=etcd-02 peerURLs=https://172.31.205.54:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.54:2379 isLeader=false
 ef8033e5768a832a: name=etcd-03 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.55:2379 isLeader=false
 f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.53:2379 isLeader=true
