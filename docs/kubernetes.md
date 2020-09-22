@@ -541,6 +541,7 @@ cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 
 
 > 生成token
+> 
 > head -c 16 /dev/urandom | od -An -t x | tr -d ' '
 > 
 > cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
