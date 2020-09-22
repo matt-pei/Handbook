@@ -99,7 +99,7 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 ```
 
 ```
-chown -R etcd:etcd /opt/src/etcd-v3.2.31
+chown -R etcd:etcd /opt/src/etcd-v3.3.25
 chown -R etcd:etcd /opt/src/etcd
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
 # 更新supervisor配置
