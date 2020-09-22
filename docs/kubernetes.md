@@ -253,13 +253,12 @@ etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `n
 # 2、下载etcd安装包
 # 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 mkdir -p /opt/src/
-curl -L https://github.com/etcd-io/etcd/releases/download/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
-# curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
+curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
-tar zxf /opt/src/etcd-v3.2.31-linux-amd64.tar.gz -C /opt/src/
-mv /opt/src/etcd-v3.2.31-linux-amd64 /opt/src/etcd-v3.2.31
+tar zxf /opt/src/etcd-v3.3.25-linux-amd64.tar.gz -C /opt/src/
+mv /opt/src/etcd-v3.3.25-linux-amd64 /opt/src/etcd-v3.3.25
 # 为etcd做软链接,方便更新升级
-ln -s /opt/src/etcd-v3.2.31 /opt/src/etcd
+ln -s /opt/src/etcd-v3.3.25 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
 ```
@@ -376,12 +375,12 @@ f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=ht
 # 1、[k8s-apiserver]
 # 下载kubernetes二进制包
 # wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
-curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
-# curl -L https://dl.k8s.io/v1.18.9/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
+# curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
+curl -L https://dl.k8s.io/v1.18.8/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
 
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
-mv /opt/src/kubernetes /opt/src/kubernetes-v1.16.15
-ln -s /opt/src/kubernetes-v1.16.15 /opt/src/kubernetes
+mv /opt/src/kubernetes /opt/src/kubernetes-v1.18.8
+ln -s /opt/src/kubernetes-v1.18.8 /opt/src/kubernetes
 # 删除无用的镜像文件
 rm -rf /opt/src/kubernetes/server/bin/*.tar
 rm -rf /opt/src/kubernetes/server/bin/*_tag
@@ -613,14 +612,13 @@ systemctl enable kube-apiserver
 
 ```
 # 下载kubernetes-node
-curl -L https://dl.k8s.io/v1.16.15/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz
-
+#curl -L https://dl.k8s.io/v1.16.15/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz
 # 下载kubernetes-node v18.9
-# curl -L https://dl.k8s.io/v1.18.9/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz 
+curl -L https://dl.k8s.io/v1.18.8/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz 
 
 tar zxf /opt/src/kubernetes-node-linux-amd64.tar.gz -C /opt/src/
-mv /opt/src/kubernetes /opt/src/kubernetes-node-v1.16.15
-ln -s /opt/src/kubernetes-node-v1.16.15/ /opt/src/kubernetes-node
+mv /opt/src/kubernetes /opt/src/kubernetes-node-v1.18.8
+ln -s /opt/src/kubernetes-node-v1.18.8/ /opt/src/kubernetes-node
 # 创建目录
 mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
 ```
