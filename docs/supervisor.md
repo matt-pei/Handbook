@@ -45,7 +45,7 @@ EOF
 chmod +x /opt/src/etcd/etcd-startup.sh
 ```
 
-### 3、创建supervisor启动etcd配置
+### 3、创建supervisor启动配置
 ```
 # 创建etcd日志目录
 mkdir -p /data/kubernetes/logs/etcd
