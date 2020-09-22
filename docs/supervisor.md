@@ -79,8 +79,9 @@ EOF
 
 ### 4、启动etcd并检查状态
 
-> 提前拷贝相关证书,否则启动报错***
-> 证书分别为：ca.pem/etcd.pem/etcd-key.pem***
+> 提前拷贝相关证书,否则启动报错
+> 
+> 证书分别为：ca.pem/etcd.pem/etcd-key.pem
 
 ```
 # master
