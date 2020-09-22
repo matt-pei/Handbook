@@ -83,6 +83,7 @@ cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 EOF
 # 生成CA证书和私钥
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
 ```
 
 至此CA证书自签发完成
@@ -126,6 +127,7 @@ cat > /opt/kubernetes/pki/ca-config.json <<EOF
     }
 }
 EOF
+
 ```
 
 ---
