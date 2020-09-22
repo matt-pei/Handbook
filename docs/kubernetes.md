@@ -8,9 +8,15 @@
 
 (更新中...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
 
-> 建议统一主机名
+> 警告：建议统一主机名
+>
+> 1、设置主机名
+>
+> 2、关闭防火墙
 
 ```
+# 1、设置主机名
+
 hostnamectl set-hostname --static k8s-master && bash
 hostnamectl set-hostname --static k8s-node01 && bash
 hostnamectl set-hostname --static k8s-node02 && bash
@@ -24,11 +30,21 @@ echo "172.31.205.54   k8s-node01" >> /etc/hosts
 echo "172.31.205.55   k8s-node02" >> /etc/hosts
 # 查看配置
 cat /etc/hosts
+
+# 2、关闭防火墙
+setenforce 0
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
+# 关闭firewalld服务
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+
 ```
 
 ### 1、自签CA颁发证书
 ```
 # 1、使用cfssl自签证书
+
 mkdir -p /opt/kubernetes/pki
 cd /opt/kubernetes/pki
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
@@ -36,10 +52,12 @@ curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
 curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
 # 添加执行权限
 chmod +x /usr/bin/cfssl*
+
 ```
 
 ```
 # 2、创建CA证书请求文件（csr）
+
 cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 {
     "CN": "kubernetes-ca",
@@ -70,6 +88,8 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 至此CA证书自签发完成
 
 ```
+# 创创建基于根证书的config配置文件
+
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
     "signing": {
@@ -119,6 +139,7 @@ EOF
 # 1、创建etcd证书请求文件
 # 实际部署中,请修改"hosts"参数中的etcd集群规划的 准确 ip地址(非Ip地址范围)
 # 否则在启动etcd的时候会报证书相关错误
+
 cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
@@ -142,9 +163,9 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
     ]
 }
 EOF
-
 # 签发etcd证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
+
 ```
 
 etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `node02(etcd-3)`安装部署
