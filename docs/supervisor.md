@@ -209,13 +209,13 @@ supervisorctl status
 kube-apiserver                   RUNNING   pid 2278, uptime 0:01:53
 
 netstat -anpt | grep 6443
-tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
-tcp        0      0 192.168.181.211:6443    192.168.181.211:39948   ESTABLISHED 17197/kube-apiserve
-tcp        0      0 192.168.181.211:39948   192.168.181.211:6443    ESTABLISHED 17197/kube-apiserve
+tcp        0      0 172.31.205.53:6443      0.0.0.0:*               LISTEN      11225/kube-apiserve
+tcp        0      0 172.31.205.53:6443      172.31.205.53:50392     ESTABLISHED 11225/kube-apiserve
+tcp        0      0 172.31.205.53:50392     172.31.205.53:6443      ESTABLISHED 11225/kube-apiserve
 或
 netstat -lntpu | grep kube-api
-tcp        0      0 192.168.181.211:6443    0.0.0.0:*               LISTEN      17197/kube-apiserve
-tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      17197/kube-apiserve
+tcp        0      0 172.31.205.53:6443      0.0.0.0:*               LISTEN      11225/kube-apiserve
+tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      11225/kube-apiserve
 ```
 
 ---
