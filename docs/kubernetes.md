@@ -119,9 +119,9 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析
-echo "172.31.205.47   k8s-master" >> /etc/hosts
-echo "172.31.205.48   k8s-node01" >> /etc/hosts
-echo "172.31.205.49   k8s-node02" >> /etc/hosts
+echo "172.31.205.53   k8s-master" >> /etc/hosts
+echo "172.31.205.54   k8s-node01" >> /etc/hosts
+echo "172.31.205.55   k8s-node02" >> /etc/hosts
 # 查看配置
 cat /etc/hosts
 ```
@@ -223,9 +223,9 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "172.31.205.47",
-        "172.31.205.48",
-        "172.31.205.49"
+        "172.31.205.53",
+        "172.31.205.54",
+        "172.31.205.55"
     ],
     "key": {
         "algo": "rsa",
@@ -315,13 +315,13 @@ Wants=network-online.target
 Type=notify
 WorkingDirectory=/opt/src/etcd/
 ExecStart=/opt/src/etcd/etcd --name etcd-01 \\
-  --listen-peer-urls https://172.31.205.47:2380 \\
-  --listen-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
+  --listen-peer-urls https://172.31.205.53:2380 \\
+  --listen-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
   --quota-backend-bytes 8000000000 \\
-  --advertise-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
-  --initial-cluster etcd-01=https://172.31.205.47:2380,etcd-02=https://172.31.205.48:2380,etcd-03=https://172.31.205.49:2380 \\
+  --advertise-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
+  --initial-cluster etcd-01=https://172.31.205.53:2380,etcd-02=https://172.31.205.54:2380,etcd-03=https://172.31.205.55:2380 \\
   --data-dir /opt/src/etcd/data/ \\
-  --initial-advertise-peer-urls https://172.31.205.47:2380 \\
+  --initial-advertise-peer-urls https://172.31.205.53:2380 \\
   --ca-file /opt/src/etcd/pki/ca.pem \\
   --cert-file /opt/src/etcd/pki/etcd.pem \\
   --key-file /opt/src/etcd/pki/etcd-key.pem \\
@@ -362,9 +362,9 @@ cluster is healthy
 
 # 查看etcd集群在线状态
 /opt/src/etcd/etcdctl member list
-26bb67943ff3802a: name=etcd2 peerURLs=https://172.31.205.45:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.45:2379 isLeader=false
-68b27ec2be75f5c1: name=etcd3 peerURLs=https://172.31.205.46:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.46:2379 isLeader=false
-ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.44:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.44:2379 isLeader=true
+26bb67943ff3802a: name=etcd2 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.45:2379 isLeader=false
+68b27ec2be75f5c1: name=etcd3 peerURLs=https://172.31.205.54:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.46:2379 isLeader=false
+ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.44:2379 isLeader=true
 ```
 
 ---
@@ -394,9 +394,9 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
     "hosts": [
-    "172.31.205.47",
-    "172.31.205.48",
-    "172.31.205.49"
+    "172.31.205.53",
+    "172.31.205.54",
+    "172.31.205.55"
     ],
     "key": {
         "algo": "rsa",
@@ -426,7 +426,7 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     "CN": "apiserver",
     "hosts": [
         "127.0.0.1",
-        "172.31.205.47",
+        "172.31.205.53",
         "kubernetes.default",
         "kubernetes.default.svc",
         "kubernetes.default.svc.cluster",
@@ -561,7 +561,7 @@ After=network.target
 ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
   --apiserver-count 1 \\
   --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \\
-  --bind-address 172.31.205.47 \\
+  --bind-address 172.31.205.53 \\
   --authorization-mode RBAC,Node \\
   --enable-bootstrap-token-auth true \\
   --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
@@ -572,7 +572,7 @@ ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
   --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \\
   --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \\
   --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \\
-  --etcd-servers https://172.31.205.47:2379,https://172.31.205.48:2379,https://172.31.205.49:2379 \\
+  --etcd-servers https://172.31.205.53:2379,https://172.31.205.54:2379,https://172.31.205.55:2379 \\
   --service-cluster-ip-range 10.10.0.0/16 \\
   --service-node-port-range 3000-29999 \\
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\

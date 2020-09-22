@@ -23,13 +23,13 @@ useradd -s /sbin/nologin -M etcd
 cat > /opt/src/etcd/etcd-startup.sh <<EOF
 #!/bin/bash
 /opt/src/etcd/etcd --name etcd-01 \\
-  --listen-peer-urls https://172.31.205.47:2380 \\
-  --listen-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
+  --listen-peer-urls https://172.31.205.53:2380 \\
+  --listen-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
   --quota-backend-bytes 8000000000 \\
-  --advertise-client-urls https://172.31.205.47:2379,http://127.0.0.1:2379 \\
-  --initial-cluster etcd-01=https://172.31.205.47:2380,etcd-02=https://172.31.205.48:2380,etcd-03=https://172.31.205.49:2380 \\
+  --advertise-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
+  --initial-cluster etcd-01=https://172.31.205.53:2380,etcd-02=https://172.31.205.54:2380,etcd-03=https://172.31.205.55:2380 \\
   --data-dir /opt/src/etcd/data/ \\
-  --initial-advertise-peer-urls https://172.31.205.47:2380 \\
+  --initial-advertise-peer-urls https://172.31.205.53:2380 \\
   --ca-file /opt/src/etcd/pki/ca.pem \\
   --cert-file /opt/src/etcd/pki/etcd.pem \\
   --key-file /opt/src/etcd/pki/etcd-key.pem \\
@@ -128,7 +128,7 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
 /opt/src/kubernetes/server/bin/kube-apiserver \\
   --apiserver-count 1 \\
   --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \\
-  --bind-address 172.31.205.47 \\
+  --bind-address 172.31.205.53 \\
   --authorization-mode RBAC,Node \\
   --enable-bootstrap-token-auth true \\
   --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
@@ -139,7 +139,7 @@ cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
   --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \\
   --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \\
   --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \\
-  --etcd-servers https://172.31.205.47:2379,https://172.31.205.48:2379,https://172.31.205.49:2379 \\
+  --etcd-servers https://172.31.205.53:2379,https://172.31.205.54:2379,https://172.31.205.55:2379 \\
   --service-cluster-ip-range 10.10.0.0/16 \\
   --service-node-port-range 3000-29999 \\
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
@@ -168,7 +168,7 @@ cp /opt/kubernetes/pki/apiserver.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 ```
 
-### 2、创建supervisor启动etcd配置
+### 2、创建supervisor启动配置
 ```
 # 创建apiserver日志目录
 mkdir -p /data/kubernetes/logs/kube-apiserver/
