@@ -362,9 +362,9 @@ cluster is healthy
 
 # 查看etcd集群在线状态
 /opt/src/etcd/etcdctl member list
-26bb67943ff3802a: name=etcd2 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.45:2379 isLeader=false
-68b27ec2be75f5c1: name=etcd3 peerURLs=https://172.31.205.54:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.46:2379 isLeader=false
-ddae50d640aac69b: name=etcd1 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.44:2379 isLeader=true
+cfeb24d3c6969a88: name=etcd-02 peerURLs=https://172.31.205.54:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.54:2379 isLeader=false
+ef8033e5768a832a: name=etcd-03 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.55:2379 isLeader=false
+f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.53:2379 isLeader=true
 ```
 
 ---
