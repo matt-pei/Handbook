@@ -137,15 +137,17 @@ EOF
 ---
 ---
 
-### 二、部署etcd集群
+## 5、部署etcd集群
+ 
+> 首先创建etcd的请求文件,此请求文件是在`CA`机器上来完成
 
-首先创建etcd的请求文件,此请求文件是在`CA`机器上来完成
+### 5.1 创建etcd证书请求文件
+
+> 实际部署中,请修改"hosts"参数中ip地址(运行etcd的服务,非ip地址段)
+>
+> 否则在启动etcd的时候会报证书相关错误
 
 ```
-# 1、创建etcd证书请求文件
-# 实际部署中,请修改"hosts"参数中ip地址(运行etcd的服务,非ip地址段)
-# 否则在启动etcd的时候会报证书相关错误
-
 cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
@@ -174,12 +176,11 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 
 ```
 
-etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
+> etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
 
+### 5.2 下载etcd安装包
+- 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
 ```
-# 2、下载etcd安装包
-# 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
-
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
