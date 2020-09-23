@@ -2,12 +2,12 @@
 
 使用supervisor管理启动服务
 
-. [安装etcd](#1使用supervisor托管etcd服务)
-. [安装apiserver](#1创建apiserver启动脚本)
-. [安装controller](#1创建kube-controller启动脚本)
-. [安装scheduler](#1创建schduler启动脚本)
-. [安装kubelet](#)
-. [安装kubeproxy](#)
+- [安装etcd](#1使用supervisor托管etcd服务)
+- [安装apiserver](#1创建apiserver启动脚本)
+- [安装controller](#1创建kube-controller启动脚本)
+- [安装scheduler](#1创建schduler启动脚本)
+- [安装kubelet](#)
+- [安装kubeproxy](#)
 
 
 ## 1、使用supervisor托管etcd服务
