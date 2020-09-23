@@ -402,6 +402,10 @@ kubectl config use-context k8s-context --kubeconfig=kubelet.kubeconfig
 > 拉取kubelet启动是所需镜像pause
 >
 > docker pull registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
+> 
+> docker tag registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1 k8s.gcr.io/pause:3.1
+> 
+> docker rmi registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
 
 ### 2、创建kubelet启动脚本
 ```
@@ -409,22 +413,22 @@ mkdir -p /data/kubernetes/logs/kubelet
 # 创建启动脚本
 cat > /opt/src/kubernetes-node/node/bin/kubelet.sh <<EOF
 #!/bin/bash
-/opt/src/kubernetes-node/node/bin/kubelet \
-  --anonymous-auth=false \
-  --cgroup-driver systemd \
-  --cluster-dns 192.168.0.2 \
-  --cluster-domain cluster.local \
-  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \
-  --fail-swap-on="false" \
-  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \
-  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \
-  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pki/kubelet-key.pem \
-  --hostname-override k8s-node01 \
-  --image-gc-high-threshold 20 \
-  --image-gc-low-threshold 10 \
-  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \
-  --log-dir /data/kubernetes/logs/kubelet \
-  --pod-infra-container-image k8s.gcr.io/pause:3.1 \
+/opt/src/kubernetes-node/node/bin/kubelet \\
+  --anonymous-auth=false \\
+  --cgroup-driver systemd \\
+  --cluster-dns 192.168.0.2 \\
+  --cluster-domain cluster.local \\
+  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \\
+  --fail-swap-on="false" \\
+  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \\
+  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \\
+  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pki/kubelet-key.pem \\
+  --hostname-override k8s-node01 \\
+  --image-gc-high-threshold 20 \\
+  --image-gc-low-threshold 10 \\
+  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \\
+  --log-dir /data/kubernetes/logs/kubelet \\
+  --pod-infra-container-image k8s.gcr.io/pause:3.1 \\
   --root-dir /data/kubernetes/logs/kubelet
 EOF
 # 添加脚本执行权限
@@ -467,4 +471,7 @@ supervisorctl status
 
 kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 ```
+
+
+### 2、创建启动脚本
 
