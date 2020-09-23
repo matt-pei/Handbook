@@ -2,6 +2,14 @@
 
 使用supervisor管理启动服务
 
+. [安装etcd](#1使用supervisor托管etcd服务)
+. [安装apiserver](#1创建apiserver启动脚本)
+. [安装controller](#1创建kube-controller启动脚本)
+. [安装scheduler](#1创建schduler启动脚本)
+. [安装kubelet](#)
+. [安装kubeproxy](#)
+
+
 ## 1、使用supervisor托管etcd服务
 
 ### 1、安装supervisor
@@ -286,7 +294,7 @@ kube-controller-manager          RUNNING   pid 2646, uptime 0:00:30
 
 ## 4、配置kube-scheduler启动
 
-### 1、创建启动脚本
+### 1、创建schduler启动脚本
 ```
 # 创建scheduler日志目录
 mkdir -p /data/kubernetes/logs/kube-scheduler
@@ -349,4 +357,114 @@ kubectl get cs -o yaml
 ---
 
 ## 5、安装node节点
+
+> node节点上需要安装的组件为：kubelet、kubeproxy和docker
+
+### 1、创建kubelet相关配置
+
+#### set-cluster
+```
+# 指定apiserver的地址和证书位置
+cd /opt/src/kubernetes-node/node/bin/conf/
+
+kubectl config set-cluster myk8s \
+--certificate-authority=/opt/src/kubernetes-node/node/bin/pki/ca.pem \
+--embed-certs=true \
+--server=https://172.31.205.59:6443 \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### set-credentials
+```
+# 设置客户端认证参数，指定client证书和秘钥
+kubectl config set-credentials k8s-node \
+--client-certificate=/opt/src/kubernetes-node/node/bin/pki/client.pem \
+--client-key=/opt/src/kubernetes-node/node/bin/pki/client-key.pem \
+--embed-certs=true \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### set-context
+```
+# 关联用户和集群
+kubectl config set-context k8s-context \
+--cluster=myk8s \
+--user=k8s-node \
+--kubeconfig=kubelet.kubeconfig
+```
+
+#### use-context
+```
+# 设置当前上下文
+kubectl config use-context k8s-context --kubeconfig=kubelet.kubeconfig
+```
+
+> 拉取kubelet启动是所需镜像pause
+>
+> docker pull registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
+
+### 2、创建kubelet启动脚本
+```
+mkdir -p /data/kubernetes/logs/kubelet
+# 创建启动脚本
+cat > /opt/src/kubernetes-node/node/bin/kubelet.sh <<EOF
+#!/bin/bash
+/opt/src/kubernetes-node/node/bin/kubelet \
+  --anonymous-auth=false \
+  --cgroup-driver systemd \
+  --cluster-dns 192.168.0.2 \
+  --cluster-domain cluster.local \
+  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \
+  --fail-swap-on="false" \
+  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \
+  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \
+  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pki/kubelet-key.pem \
+  --hostname-override k8s-node01 \
+  --image-gc-high-threshold 20 \
+  --image-gc-low-threshold 10 \
+  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \
+  --log-dir /data/kubernetes/logs/kubelet \
+  --pod-infra-container-image k8s.gcr.io/pause:3.1 \
+  --root-dir /data/kubernetes/logs/kubelet
+EOF
+# 添加脚本执行权限
+chmod +x /opt/src/kubernetes-node/node/bin/kubelet.sh
+```
+### 3、创建supervisor启动配置
+```
+# 创建kubelet日志目录
+mkdir -p /data/kubernetes/logs/kubelet
+# 创建supervisor配置文件
+cat > /etc/supervisord.d/kubelet.ini <<EOF
+[program:kubelet]
+command=/opt/src/kubernetes-node/node/bin/kubelet.sh     ; the program (relative uses PATH, can take args)
+numprocs=1                                        ; number of processes copies to start (def 1)
+directory=/opt/src/kubernetes-node/node/          ; directory to cwd to before exec (def no cwd)
+autostart=true                                    ; start at supervisord start (default: true)
+autorestart=true                                  ; retstart at unexpected quit (default: true)
+startsecs=30                                      ; number of secs prog must stay running (def. 1)
+startretries=3                                    ; max # of serial start failures (default 3)
+exitcodes=0,2                                     ; 'expected' exit codes for process (default 0,2)
+stopsignal=QUIT                                   ; signal used to kill process (default TERM)
+stopwaitsecs=10                                   ; max num secs to wait b4 SIGKILL (default 10)
+user=root                                         ; setuid to this UNIX account to run the program
+redirect_stderr=true                              ; redirect proc stderr to stdout (default false)
+stdout_logfile=/data/kubernetes/logs/kubelet/kubelet.stdout.log   ; stderr log path, NONE for none; default AUTO
+stdout_logfile_maxbytes=64MB                      ; max # logfile bytes b4 rotation (default 50MB)
+stdout_logfile_backups=4                          ; # of stdout logfile backups (default 10)
+stdout_capture_maxbytes=1MB                       ; number of bytes in 'capturemode' (default 0)
+stdout_events_enabled=false                       ; emit events on stdout writes (default false)
+EOF
+```
+### 4、查看kubelet启动
+```
+# 更新controller配置
+supervisorctl update
+
+kube-kubelet: added process group
+# 查看启动状态
+supervisorctl status
+
+kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
+```
 

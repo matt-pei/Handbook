@@ -20,6 +20,7 @@
 hostnamectl set-hostname --static k8s-master && bash
 hostnamectl set-hostname --static k8s-node01 && bash
 hostnamectl set-hostname --static k8s-node02 && bash
+
 # 显示当前主机名设置
 hostnamectl status
 # 设置 hostname 解析
@@ -28,6 +29,7 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 echo "172.31.205.53   k8s-master" >> /etc/hosts
 echo "172.31.205.54   k8s-node01" >> /etc/hosts
 echo "172.31.205.55   k8s-node02" >> /etc/hosts
+
 # 查看配置
 cat /etc/hosts
 
@@ -217,6 +219,15 @@ mkdir -p /opt/src/etcd/{pki,logs}
 > 建议配置system和supervisor两个启动服务配置,保证服务可靠性
 
 ```
+# master生成密钥
+# ssh-keygen -t rsa -P ''
+# -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
+ssh-keygen -t rsa
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
+```
+
+```
 # 3、拷贝证书
 # master
 cp /opt/kubernetes/pki/ca.pem /opt/src/etcd/pki/
@@ -231,6 +242,8 @@ scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 ```
+
+> 如果使用spuervisor启动服务,请忽略此步
 
 ```
 # 4、创建etcd系统启动服务
@@ -477,6 +490,7 @@ cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 > 
 > EOF
 
+2. [使用supervisor启动](./supervisor.md)
 
 ```
 # 5、创建apiserver系统启动服务
@@ -596,46 +610,11 @@ ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
 
 #### 2、创建kubelet相关配置
 
-#### set-cluster
-```
-# 指定apiserver的地址和证书位置
-cd /opt/src/kubernetes-node/node/bin/conf/
-
-kubectl config set-cluster myk8s \
---certificate-authority=/opt/src/kubernetes-node/node/bin/pki/ca.pem \
---embed-certs=true \
---server=https://172.31.205.59:6443 \
---kubeconfig=kubelet.kubeconfig
-```
-
-#### set-credentials
-```
-# 设置客户端认证参数，指定client证书和秘钥
-kubectl config set-credentials k8s-node \
---client-certificate=/opt/src/kubernetes-node/node/bin/pki/client.pem \
---client-key=/opt/src/kubernetes-node/node/bin/pki/client-key.pem \
---embed-certs=true \
---kubeconfig=kubelet.kubeconfig
-```
-
-#### set-context
-```
-# 关联用户和集群
-kubectl config set-context k8s-context \
---cluster=myk8s \
---user=k8s-node \
---kubeconfig=kubelet.kubeconfig
-```
-
-#### use-context
-```
-# 设置当前上下文
-kubectl config use-context k8s-context --kubeconfig=kubelet.kubeconfig
-```
+3. [使用supervisor启动](./supervisor.md)
 
 #### 创建k8s-node.yaml
 
-> 此步需在master节点执行
+> 此步在master节点执行
 
 ```
 cat > /opt/src/kubernetes-node/node/bin/conf/k8s-node.yaml <<EOF
@@ -661,64 +640,8 @@ kubectl create -f k8s-node.yaml
 --clusterrole=system:node-bootstrapper \
 --user=k8s-node
 
-> 拉取kubelet启动是所需镜像pause
->
-> docker pull registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
 
-#### 3、创建kubelet启动脚本
-```
-mkdir -p /data/kubernetes/logs/kubelet
-# 创建启动脚本
-cat > /opt/src/kubernetes-node/node/bin/kubelet.sh <<EOF
-#!/bin/bash
-/opt/src/kubernetes-node/node/bin/kubelet \
-  --anonymous-auth=false \
-  --cgroup-driver systemd \
-  --cluster-dns 192.168.0.2 \
-  --cluster-domain cluster.local \
-  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \
-  --fail-swap-on="false" \
-  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \
-  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \
-  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pki/kubelet-key.pem \
-  --hostname-override k8s-node01 \
-  --image-gc-high-threshold 20 \
-  --image-gc-low-threshold 10 \
-  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \
-  --log-dir /data/kubernetes/logs/kubelet \
-  --pod-infra-container-image k8s.gcr.io/pause:3.1 \
-  --root-dir /data/kubernetes/logs/kubelet
-EOF
-# 添加脚本执行权限
-chmod +x /opt/src/kubernetes-node/node/bin/kubelet.sh
-```
-#### 4、创建supervisor启动配置
-```
-# 创建kubelet日志目录
-mkdir -p /data/kubernetes/logs/kubelet
-# 创建supervisor配置文件
-cat > /etc/supervisord.d/kubelet.ini <<EOF
-[program:kubelet]
-command=/opt/src/kubernetes-node/node/bin/kubelet.sh     ; the program (relative uses PATH, can take args)
-numprocs=1                                        ; number of processes copies to start (def 1)
-directory=/opt/src/kubernetes-node/node/          ; directory to cwd to before exec (def no cwd)
-autostart=true                                    ; start at supervisord start (default: true)
-autorestart=true                                  ; retstart at unexpected quit (default: true)
-startsecs=30                                      ; number of secs prog must stay running (def. 1)
-startretries=3                                    ; max # of serial start failures (default 3)
-exitcodes=0,2                                     ; 'expected' exit codes for process (default 0,2)
-stopsignal=QUIT                                   ; signal used to kill process (default TERM)
-stopwaitsecs=10                                   ; max num secs to wait b4 SIGKILL (default 10)
-user=root                                         ; setuid to this UNIX account to run the program
-redirect_stderr=true                              ; redirect proc stderr to stdout (default false)
-stdout_logfile=/data/kubernetes/logs/kubelet/kubelet.stdout.log   ; stderr log path, NONE for none; default AUTO
-stdout_logfile_maxbytes=64MB                      ; max # logfile bytes b4 rotation (default 50MB)
-stdout_logfile_backups=4                          ; # of stdout logfile backups (default 10)
-stdout_capture_maxbytes=1MB                       ; number of bytes in 'capturemode' (default 0)
-stdout_events_enabled=false                       ; emit events on stdout writes (default false)
-EOF
-```
-#### 5、查看kubelet启动
+#### 3、查看kubelet启动
 ```
 # 更新controller配置
 supervisorctl update
@@ -734,6 +657,7 @@ kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 
 
 
+---
 
 ### 查看服务器资源
 ```
