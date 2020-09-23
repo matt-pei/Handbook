@@ -1,4 +1,4 @@
-# supervisor
+# Supervisor
 
 使用supervisor管理启动服务
 
