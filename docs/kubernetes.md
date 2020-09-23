@@ -1,21 +1,30 @@
-# 部署kubernetes
+# 部署Kubernetes集群
 
 <img alt="kubernetes logo" src=../images/kuernetes/name_blue.png>
 
 ---
 
-## 二进制部署kubernetes
+## 二进制部署Kubernetes集群
+## 1、生产环境k8s平台架构
 
-(更新中...)环境声明：作者使用3台机器部署 `Master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)` 实际部署根据需求合理配置`CA为master`机器
+- 单master集群
 
-> 警告：建议统一主机名
->
-> 1、设置主机名
->
-> 2、关闭防火墙
+<img alt="k8s架构图" src=../images/kuernetes/20191008-01.png>
 
+- 多master集群（HA）
+
+<img alt="k8s架构图" src=../images/kuernetes/20191008-02.png>
+
+## 2、服务器规划
+| 角色 | IP | 组件 |
+| :----:| :----: | :----: |
+| k8s-master | 172.31.205.62 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
+| k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd02 |
+| k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd03 |
+
+## 3、系统初始化设置
+- 1、设置主机名
 ```
-# 1、设置主机名
 # 警告：请分别设置对应的主机名
 hostnamectl set-hostname --static k8s-master && bash
 hostnamectl set-hostname --static k8s-node01 && bash
@@ -29,11 +38,9 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 echo "172.31.205.53   k8s-master" >> /etc/hosts
 echo "172.31.205.54   k8s-node01" >> /etc/hosts
 echo "172.31.205.55   k8s-node02" >> /etc/hosts
-
-# 查看配置
-cat /etc/hosts
-
-# 2、关闭防火墙
+```
+- 2、关闭防火墙
+```
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
@@ -43,10 +50,9 @@ systemctl disable firewalld.service
 
 ```
 
-### 一、自签CA颁发证书
+## 4、自签CA颁发证书
+### 4.1、安装cfssl工具
 ```
-# 1、使用cfssl自签证书
-
 mkdir -p /opt/kubernetes/pki
 cd /opt/kubernetes/pki
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
@@ -56,10 +62,9 @@ curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-
 chmod +x /usr/bin/cfssl*
 
 ```
-
+### 4.2、生成CA证书
+#### 4.2.1 创建CA证书请求文件（csr）
 ```
-# 2、创建CA证书请求文件（csr）
-
 cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 {
     "CN": "kubernetes-ca",
@@ -87,12 +92,9 @@ EOF
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 
 ```
-
-至此CA证书自签发完成
+#### 4.2.2 创建基于根证书的config配置文件
 
 ```
-# 创建基于根证书的config配置文件
-
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
     "signing": {
