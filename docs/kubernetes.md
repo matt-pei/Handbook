@@ -16,7 +16,7 @@
 
 ```
 # 1、设置主机名
-
+# 警告：请分别设置对应的主机名
 hostnamectl set-hostname --static k8s-master && bash
 hostnamectl set-hostname --static k8s-node01 && bash
 hostnamectl set-hostname --static k8s-node02 && bash
@@ -24,7 +24,7 @@ hostnamectl set-hostname --static k8s-node02 && bash
 hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
-# 设置集群主机名解析
+# 设置集群主机名解析（ALL）
 echo "172.31.205.53   k8s-master" >> /etc/hosts
 echo "172.31.205.54   k8s-node01" >> /etc/hosts
 echo "172.31.205.55   k8s-node02" >> /etc/hosts
@@ -170,7 +170,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 
 ```
 
-etcd采用集群模式(3台),所以分别在`master(etcd-1)` `node01(etcd-2)` `node02(etcd-3)`安装部署
+etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
 
 ```
 # 2、下载etcd安装包
@@ -188,8 +188,10 @@ mkdir -p /opt/src/etcd/{pki,logs}
 
 ```
 
+---
+
 > 如果GitHub下载非常慢,可以尝试使用华为源：
-> 
+> 警告：一定确认好下载版本
 > curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 >
 > curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
@@ -199,14 +201,12 @@ mkdir -p /opt/src/etcd/{pki,logs}
 ***警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：***
 
 ***--listen-peer-urls***
-
 ***--listen-client-urls***
-
 ***--advertise-client-urls***
-
 ***--initial-advertise-peer-urls***
+***[可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第4步骤***
 
-***[可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第3步骤***
+---
 
 1. [通过spuervisor启动服务](./supervisor.md)
 
