@@ -139,7 +139,7 @@ EOF
 
 ```
 # 1、创建etcd证书请求文件
-# 实际部署中,请修改"hosts"参数中的etcd集群规划的 准确 ip地址(非Ip地址范围)
+# 实际部署中,请修改"hosts"参数中ip地址(运行etcd的服务,非ip地址段)
 # 否则在启动etcd的时候会报证书相关错误
 
 cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
@@ -190,8 +190,8 @@ mkdir -p /opt/src/etcd/{pki,logs}
 
 ---
 
-> 如果GitHub下载非常慢,可以尝试使用华为源：
-> 警告：一定确认好下载版本
+> 如果GitHub下载非常慢,可以尝试使用华为源  警告：一定确认好下载版本
+> 
 > curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 >
 > curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
@@ -201,10 +201,14 @@ mkdir -p /opt/src/etcd/{pki,logs}
 ***警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：***
 
 ***--listen-peer-urls***
+
 ***--listen-client-urls***
+
 ***--advertise-client-urls***
+
 ***--initial-advertise-peer-urls***
-***[可选项] 如果想使用supervisor方式托管etcd服务,请忽略下方第4步骤***
+
+***[可选项] 如果想使用supervisor方式托管etcd和kubernetes服务,请跳转“通过spuervisor启动服务”并忽略下方第4步***
 
 ---
 
@@ -338,7 +342,6 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
     ]
 }
 EOF
-
 # 签发client证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 ```
@@ -372,7 +375,6 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     ]
 }
 EOF
-
 # 签发apiserver证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server apiserver-csr.json | cfssljson -bare apiserver
 ```
@@ -666,7 +668,7 @@ kubectl create -f k8s-node.yaml
 #### 3、创建kubelet启动脚本
 ```
 mkdir -p /data/kubernetes/logs/kubelet
-
+# 创建启动脚本
 cat > /opt/src/kubernetes-node/node/bin/kubelet.sh <<EOF
 #!/bin/bash
 /opt/src/kubernetes-node/node/bin/kubelet \
@@ -694,7 +696,7 @@ chmod +x /opt/src/kubernetes-node/node/bin/kubelet.sh
 ```
 # 创建kubelet日志目录
 mkdir -p /data/kubernetes/logs/kubelet
-# 
+# 创建supervisor配置文件
 cat > /etc/supervisord.d/kubelet.ini <<EOF
 [program:kubelet]
 command=/opt/src/kubernetes-node/node/bin/kubelet.sh     ; the program (relative uses PATH, can take args)
@@ -720,9 +722,11 @@ EOF
 ```
 # 更新controller配置
 supervisorctl update
+
 kube-kubelet: added process group
 # 查看启动状态
 supervisorctl status
+
 kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 ```
 
