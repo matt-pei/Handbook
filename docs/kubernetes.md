@@ -679,10 +679,9 @@ k8s-node02   Ready    <none>   27s    v1.18.8
 kubectl label node k8s-node01 node-role.kubernetes.io/node=
 ```
 
-#### 2、安装部署kube-proxy
-
+### 7.2 部署kube-prroxy
+#### 7.2.1 签发kube-proxy证书
 ```
-# 签发kube-proxy证书
 cat > /opt/kubernetes/pki/kube-proxy-csr.json <<EOF
 {
     "CN": "system:kube-proxy",
@@ -705,9 +704,8 @@ EOF
 # 
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client kube-proxy-csr.json | cfssljson -bare kube-porxy
 ```
-
+#### 7.2.2 拷贝kube-proxy证书到node节点
 > 拷贝kube-porxy证书到node节点
-
 ```
 # node01
 scp /opt/kubernetes/pki/kube-porxy.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
@@ -717,7 +715,7 @@ scp /opt/kubernetes/pki/kube-porxy.pem k8s-node02:/opt/src/kubernetes-node/node/
 scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
 ```
 
-#### 2、创建kube-porxy配置
+#### 7.2.3 创建kube-proxy配置
 #### set-cluster
 ```
 # 指定apiserver的地址和证书位置
@@ -751,7 +749,7 @@ kubectl config set-context k8s-context \
 # 设置当前上下文
 kubectl config use-context k8s-context --kubeconfig=kube-proxy.kubeconfig
 ```
-
+#### 7.2.4 配置ipvs
 ```
 vim /root/ipvs.sh
 #!/bin/bash 
@@ -810,7 +808,8 @@ stdout_capture_maxbytes=1MB                                          ; number of
 stdout_events_enabled=false                                          ; emit events on stdout writes (default false)
 EOF
 ```
-# 查看kube-proxy启动
+
+#### 7.2.4 查看kube-proxy服务
 ```
 # 更新controller配置
 supervisorctl update
