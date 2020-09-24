@@ -771,7 +771,10 @@ modprobe -- ip_vs_wrr
 modprobe -- ip_vs_sh
 modprobe -- nf_conntrack_ipv4
 EOF
-chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules && lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+# 添加文件权限
+chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules
+# 查看加载
+lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 ```
 
 #### 7.2.5 创建启动kube-proxy脚本
