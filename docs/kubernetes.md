@@ -667,7 +667,7 @@ supervisorctl status
 kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 ```
 
-#### 查看node节点
+#### 7.1.6 查看node节点信息
 ```
 # 检查所有节点并给节点打上标签
 kubectl get node
