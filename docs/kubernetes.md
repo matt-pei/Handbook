@@ -1,6 +1,6 @@
 # 部署Kubernetes集群
 
-<img alt="kubernetes logo" src=../images/kuernetes/name_blue.png>
+<img alt="kubernetes logo" src="../images/kuernetes/name_blue.png" />
 
 ---
 
@@ -9,11 +9,11 @@
 
 - 单master集群
 
-<img alt="k8s架构图" src=../images/kuernetes/20191008-01.png>
+<img alt="k8s架构图" src="../images/kuernetes/20191008-01.png" />
 
 - 多master集群（HA）
 
-<img alt="k8s架构图" src=../images/kuernetes/20191008-02.png>
+<img alt="k8s架构图" src="../images/kuernetes/20191008-02.png" />
 
 ## 2、服务器规划
 | 角色 | IP | 组件 |
