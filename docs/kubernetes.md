@@ -136,8 +136,6 @@ EOF
 
 ```
 
----
----
 
 ## 5、部署etcd集群
  
@@ -182,7 +180,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 
 ### 5.2 下载etcd安装包
 - 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
-  - [默认使用github下载]()
+  - [默认使用github下载](https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz)
 ```
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
@@ -200,19 +198,6 @@ curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.ta
 
 curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 ```
-
-> 警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
-- --listen-peer-urls
-- --listen-client-urls
-- --advertise-client-urls
-- --initial-advertise-peer-urls
-
-> [可选项] 如果想使用supervisor方式托管etcd和kubernetes服务,请跳转“通过spuervisor启动服务”并忽略下方 5.3.3
-
-
-- 1、[使用spuervisor启动etcd](./supervisor.md)
-
-> 建议配置system和supervisor两个启动服务配置,保证服务可靠性
 
 ### 5.3 配置etcd
 #### 5.3.1 拷贝密钥到node节点
@@ -240,9 +225,20 @@ scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 ```
-#### 5.3.3 创建etcd系统服务
-> 如果使用spuervisor启动服务,请忽略此步
 
+> 警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
+- --listen-peer-urls
+- --listen-client-urls
+- --advertise-client-urls
+- --initial-advertise-peer-urls
+
+> [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略下方 “5.3.3 创建etcd系统服务”
+
+- 1、[使用spuervisor启动etcd](./supervisor.md)
+
+> 建议配置system和supervisor两个启动服务配置,保证服务启动可靠性
+
+#### 5.3.3 创建etcd系统服务
 ```
 cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
@@ -289,9 +285,9 @@ systemctl enable etcd
 #### 5.3.4 查看etcd集群状态
 ```
 # /opt/src/etcd/etcdctl cluster-health
-
+# 软链接etcd命令
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
-
+# 查看etcd集群健康检查
 etcdctl cluster-health
 member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
 member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
@@ -304,9 +300,6 @@ cfeb24d3c6969a88: name=etcd-02 peerURLs=https://172.31.205.54:2380 clientURLs=ht
 ef8033e5768a832a: name=etcd-03 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.55:2379 isLeader=false
 f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.53:2379 isLeader=true
 ```
-
----
----
 
 ## 6、安装Master节点组件
 
@@ -328,8 +321,8 @@ rm -rf /opt/src/kubernetes/server/bin/*.tar
 rm -rf /opt/src/kubernetes/server/bin/*_tag
 ```
 #### 6.1.2 签发client证书
+> 注意：apiserver在与etcd进行通信时，此时apiserver为客户端etcd为服务端，因此需要client证书加密通信。
 ```
-# apiserver在与etcd进行通信时，apiserver是客户端etcd是服务端，因此需要client证书。
 cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
@@ -357,8 +350,8 @@ EOF
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 ```
 #### 6.1.3 签发apiserver（server）证书
+> 当其他客户端与apiserver进行通信时,也需要TLS认证，此时apiserver为服务端
 ```
-# 当其他客户端与apiserver进行通信时也需要TLS认证，此时apiserver为服务端证书
 cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
 {
     "CN": "apiserver",
@@ -464,7 +457,7 @@ rules:
       - "RequestReceived"
 EOF
 ```
-#### 6.1.5 拷贝apiserver相关证书到node节点
+#### 6.1.5 拷贝apiserver相关证书
 ```
 # 拷贝证书
 cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
@@ -483,7 +476,10 @@ cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
 EOF
 ```
+> [可选项] 如使用supervisor启动apiserver服务,请点击跳转“使用supervisor启动apiserver”并忽略下方 “6.1.7 创建apiserver系统服务”
+
 - 2、[使用supervisor启动apiserver](./supervisor.md)
+
 
 #### 6.1.7 创建apiserver系统服务
 ```
@@ -544,16 +540,15 @@ systemctl enable kube-apiserver
 # 1、[kube-scheduler]
 ```
 
----
----
-
 ## 7、安装Node节点组件
 
-> node节点上需要安装的组件为：kubelet、kubeproxy和docker
+> 注意：node节点上需要安装的组件为：kubelet、kubeproxy和docker
 
 ### 7.1 部署kubelet
-
-> 安装前需要先在CA节点给kubelet签发证书
+- [安装docker](../docs/docker.md)
+> 警告：安装前需要先在CA节点给kubelet签发证书
+> 
+> 警告：kubelet服务启动时需要docker环境否则无法启动
 
 #### 7.1.1 下载node安装包
 ```
@@ -571,7 +566,6 @@ mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
 
 #### 7.1.2 签发kubelet证书
 ```
-# 签发kubelet证书
 cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
     "CN": "k8s-kubelet",
@@ -600,11 +594,8 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 ```
 
 #### 7.1.3 拷贝kubelet证书到node节点
-拷贝证书到node节点上对应存放证书目录下
+- 拷贝证书到node节点上对应存放证书目录下
 ```
-# master
-cp /opt/kubernetes/pki/kubelet.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/kubelet-key.pem /opt/src/kubernetes/server/bin/pki//
 # node01
 scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
 scp /opt/kubernetes/pki/client.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
@@ -620,15 +611,15 @@ scp /opt/kubernetes/pki/kubelet-key.pem k8s-node02:/opt/src/kubernetes-node/node
 ```
 
 ```
-# 创建kubelet软链接
+# 创建kubelet命令软链接
 ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
 ```
 
 #### 7.1.4 创建kubelet配置
 
-#### 创建k8s-node.yaml
-> 此步在master节点执行
+> 警告：此步在master节点执行
 
+#### 创建k8s-node.yaml
 ```
 cat > /opt/src/kubernetes-node/node/bin/conf/k8s-node.yaml <<EOF
 cat > /opt/src/kubernetes/server/bin/conf/k8s-node.yaml <<EOF
@@ -649,13 +640,16 @@ EOF
 kubectl create -f k8s-node.yaml
 ```
 
-> kubectl create clusterrolebinding k8s-node \
---clusterrole=system:node-bootstrapper \
---user=k8s-node
+> kubectl create clusterrolebinding k8s-node --clusterrole=system:node-bootstrapper --user=k8s-node
 
-- 5、[使用supervisor启动](./supervisor.md)
+> [可选项] 如使用supervisor启动kubelet服务,请点击跳转“使用supervisor启动kubelet”并忽略下方 “7.1.5 创建kubelet系统服务”
 
-#### 7.1.5 查看kubelet服务
+- 5、[使用supervisor启动kubelet](./supervisor.md)
+
+#### 7.1.5 创建kubelet系统服务
+```
+```
+#### 7.1.6 查看kubelet服务
 ```
 # 更新controller配置
 supervisorctl update
@@ -667,19 +661,21 @@ supervisorctl status
 kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 ```
 
-#### 7.1.6 查看node节点信息
+#### 7.1.7 查看node节点信息
 ```
 # 检查所有节点并给节点打上标签
 kubectl get node
 NAME         STATUS   ROLES    AGE    VERSION
 k8s-node01   Ready    <none>   9m4s   v1.18.8
 k8s-node02   Ready    <none>   27s    v1.18.8
+```
+```
 # 给节点打标签
-# kubectl label node k8s-node01 node-role.kubernetes.io/master=
+kubectl label node k8s-node01 node-role.kubernetes.io/master=
 kubectl label node k8s-node01 node-role.kubernetes.io/node=
 ```
 
-### 7.2 部署kube-prroxy
+### 7.2 部署kube-proxy
 #### 7.2.1 签发kube-proxy证书
 ```
 cat > /opt/kubernetes/pki/kube-proxy-csr.json <<EOF
@@ -718,9 +714,8 @@ scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node02:/opt/src/kubernetes-node/n
 #### 7.2.3 创建kube-proxy配置
 #### set-cluster
 ```
-# 指定apiserver的地址和证书位置
 cd /opt/src/kubernetes-node/node/bin/conf/
-# 
+# 指定apiserver的地址和证书位置
 kubectl config set-cluster myk8s \
 --certificate-authority=/opt/src/kubernetes-node/node/bin/pki/ca.pem \
 --embed-certs=true \
@@ -766,9 +761,20 @@ chmod +x /root/ipvs.sh
 sh /root/ipvs.sh
 lsmod |grep ip_vs
 ```
+或者
+```
+cat > /etc/sysconfig/modules/ipvs.modules <<EOF
+#!/bin/bash
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+EOF
+chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules && lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+```
 
-
-# 2、创建启动脚本
+#### 7.2.5 创建启动kube-proxy脚本
 ```
 cat > /opt/src/kubernetes-node/node/bin/kube-proxy.sh <<EOF
 #!/bin/bash
@@ -782,7 +788,7 @@ EOF
 # 添加脚本执行权限
 chmod +x /opt/src/kubernetes-node/node/bin/kube-proxy.sh
 ```
-# 创建supervisor启动配置
+#### 7.2.6 创建supervisor启动kube-proxy配置
 ```
 # 创建kube-porxy日志目录
 mkdir -p /data/kubernetes/logs/kube-porxy
@@ -808,8 +814,7 @@ stdout_capture_maxbytes=1MB                                          ; number of
 stdout_events_enabled=false                                          ; emit events on stdout writes (default false)
 EOF
 ```
-
-#### 7.2.4 查看kube-proxy服务
+#### 7.2.7 查看kube-proxy服务
 ```
 # 更新controller配置
 supervisorctl update
