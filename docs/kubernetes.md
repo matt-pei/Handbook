@@ -22,6 +22,8 @@
 | k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd02 |
 | k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd03 |
 
+> 此内容采用system方式启动服务，详内容中supervisor方式启动 
+
 ## 3、系统初始化设置
 - 1、设置主机名
 ```
@@ -180,6 +182,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 
 ### 5.2 下载etcd安装包
 - 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
+  - [默认使用github下载]()
 ```
 mkdir -p /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
@@ -191,35 +194,28 @@ ln -s /opt/src/etcd-v3.3.25 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
 ```
+#### 5.2.1 加速下载
+```
+curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 
----
+curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
+```
 
-> 如果GitHub下载非常慢,可以尝试使用华为源  警告：一定确认好下载版本
-> 
-> curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
->
-> curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
+> 警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：
+- --listen-peer-urls
+- --listen-client-urls
+- --advertise-client-urls
+- --initial-advertise-peer-urls
 
----
+> [可选项] 如果想使用supervisor方式托管etcd和kubernetes服务,请跳转“通过spuervisor启动服务”并忽略下方 5.3.3
 
-***警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,涉及需要更改的参数如下：***
 
-***--listen-peer-urls***
-
-***--listen-client-urls***
-
-***--advertise-client-urls***
-
-***--initial-advertise-peer-urls***
-
-***[可选项] 如果想使用supervisor方式托管etcd和kubernetes服务,请跳转“通过spuervisor启动服务”并忽略下方第4步***
-
----
-
-1. [通过spuervisor启动服务](./supervisor.md)
+- 1、[使用spuervisor启动etcd](./supervisor.md)
 
 > 建议配置system和supervisor两个启动服务配置,保证服务可靠性
 
+### 5.3 配置etcd
+#### 5.3.1 拷贝密钥到node节点
 ```
 # master生成密钥
 # ssh-keygen -t rsa -P ''
@@ -228,7 +224,7 @@ ssh-keygen -t rsa
 ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
 ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
 ```
-
+#### 5.3.2 拷贝证书到node节点
 ```
 # 3、拷贝证书
 # master
@@ -244,12 +240,10 @@ scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd.pem k8s-node02:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 ```
-
+#### 5.3.3 创建etcd系统服务
 > 如果使用spuervisor启动服务,请忽略此步
 
 ```
-# 4、创建etcd系统启动服务
-
 cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
 Description=Etcd Server
@@ -291,13 +285,13 @@ EOF
 systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
-
 ```
-
+#### 5.3.4 查看etcd集群状态
 ```
-# 5、查看etcd集群健康状态
 # /opt/src/etcd/etcdctl cluster-health
+
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
+
 etcdctl cluster-health
 member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
 member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
@@ -314,13 +308,13 @@ f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=ht
 ---
 ---
 
-### 三、安装Master节点组件
+## 6、安装Master节点组件
 
 > Mater节点包括：kube-apiserver、kube-controller-manager、kube-scheduler和etcd
 
-#### 1、安装kube-apiserver
+### 6.1 部署kube-apiserver
+#### 6.1.1 下载kubernetes安装包
 ```
-# 1、[k8s-apiserver]
 # 下载kubernetes二进制包
 # wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
 # curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
@@ -333,9 +327,8 @@ ln -s /opt/src/kubernetes-v1.18.8 /opt/src/kubernetes
 rm -rf /opt/src/kubernetes/server/bin/*.tar
 rm -rf /opt/src/kubernetes/server/bin/*_tag
 ```
-
+#### 6.1.2 签发client证书
 ```
-# 2、签发client证书
 # apiserver在与etcd进行通信时，apiserver是客户端etcd是服务端，因此需要client证书。
 cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
@@ -363,10 +356,9 @@ EOF
 # 签发client证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 ```
-
+#### 6.1.3 签发apiserver（server）证书
 ```
-# 3、签发apiserver证书
-# 当其他客户端与apiserver进行通信时也需要TLS认证，此时apiserver为服务端证书。
+# 当其他客户端与apiserver进行通信时也需要TLS认证，此时apiserver为服务端证书
 cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
 {
     "CN": "apiserver",
@@ -396,9 +388,8 @@ EOF
 # 签发apiserver证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server apiserver-csr.json | cfssljson -bare apiserver
 ```
-
+#### 6.1.4 配置apiserver日志审计
 ```
-# 4、拷贝证书
 # 创建存放证书目录
 mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
 # 配置apiserver日志审计
@@ -473,7 +464,7 @@ rules:
       - "RequestReceived"
 EOF
 ```
-
+#### 6.1.5 拷贝apiserver相关证书到node节点
 ```
 # 拷贝证书
 cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
@@ -484,21 +475,18 @@ cp /opt/kubernetes/pki/apiserver.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 ```
 
-
-> 生成token
-> 
-> head -c 16 /dev/urandom | od -An -t x | tr -d ' '
-> 
-> cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
-> 
-> 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
-> 
-> EOF
-
-2. [使用supervisor启动](./supervisor.md)
-
+#### 6.1.6 创建TLSBootstrapping Token
 ```
-# 5、创建apiserver系统启动服务
+head -c 16 /dev/urandom | od -An -t x | tr -d ' '
+ 
+cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
+3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
+EOF
+```
+- 2、[使用supervisor启动apiserver](./supervisor.md)
+
+#### 6.1.7 创建apiserver系统服务
+```
 cat > /lib/systemd/system/kube-apiserver.service <<EOF
 [Unit]
 Description=Kubernetes API Server
@@ -546,12 +534,12 @@ systemctl restart kube-apiserver
 systemctl enable kube-apiserver
 ```
 
-#### 2、安装kube-controller-manager
+### 6.2 部署kube-controller-manager
 ```
 # 1、[kube-controller-manager]
 ```
 
-#### 3、安装kube-scheduler
+### 6.3 部署kube-proxy
 ```
 # 1、[kube-scheduler]
 ```
@@ -559,14 +547,15 @@ systemctl enable kube-apiserver
 ---
 ---
 
-### 四、安装Node节点组件
+## 7、安装Node节点组件
 
 > node节点上需要安装的组件为：kubelet、kubeproxy和docker
 
-#### 1、安装部署kubelet
+### 7.1 部署kubelet
 
 > 安装前需要先在CA节点给kubelet签发证书
 
+#### 7.1.1 下载node安装包
 ```
 # 下载kubernetes-node
 #curl -L https://dl.k8s.io/v1.16.15/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz
@@ -580,6 +569,7 @@ ln -s /opt/src/kubernetes-node-v1.18.8/ /opt/src/kubernetes-node
 mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
 ```
 
+#### 7.1.2 签发kubelet证书
 ```
 # 签发kubelet证书
 cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
@@ -609,6 +599,7 @@ EOF
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server kubelet-csr.json | cfssljson -bare kubelet
 ```
 
+#### 7.1.3 拷贝kubelet证书到node节点
 拷贝证书到node节点上对应存放证书目录下
 ```
 # master
@@ -633,12 +624,9 @@ scp /opt/kubernetes/pki/kubelet-key.pem k8s-node02:/opt/src/kubernetes-node/node
 ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
 ```
 
-#### 2、创建kubelet相关配置
-
-3. [使用supervisor启动](./supervisor.md)
+#### 7.1.4 创建kubelet配置
 
 #### 创建k8s-node.yaml
-
 > 此步在master节点执行
 
 ```
@@ -665,8 +653,9 @@ kubectl create -f k8s-node.yaml
 --clusterrole=system:node-bootstrapper \
 --user=k8s-node
 
+- 5、[使用supervisor启动](./supervisor.md)
 
-#### 3、查看kubelet启动
+#### 7.1.5 查看kubelet服务
 ```
 # 更新controller配置
 supervisorctl update
