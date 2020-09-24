@@ -38,6 +38,7 @@ generatecommandkey
 logchange 0.5
 logdir /var/log/chrony
 EOF
+# 启动chronyd服务
 systemctl enable chronyd
 systemctl start chronyd
 ```
