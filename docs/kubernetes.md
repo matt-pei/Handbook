@@ -190,7 +190,6 @@ mv /opt/src/etcd-v3.3.25-linux-amd64 /opt/src/etcd-v3.3.25
 ln -s /opt/src/etcd-v3.3.25 /opt/src/etcd
 # 创建存放etcd证书目录
 mkdir -p /opt/src/etcd/{pki,logs}
-
 ```
 
 ---
