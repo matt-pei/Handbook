@@ -238,8 +238,37 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 
 > 建议配置system和supervisor两个启动服务配置,保证服务启动可靠性
 
-#### 5.3.3 创建etcd系统服务
+#### 5.3.3 添加etcd配置文件
 ```
+mkdir -pv /etcd/kubernetes/etcd
+cat > /etc/kubernetes/etcd/etcd.conf <<EOF
+#[Member]
+ETCD_NAME="etcd-01"
+ETCD_DATA_DIR="/opt/src/etcd/data/"
+ETCD_LISTEN_PEER_URLS="https://192.168.2.10:2380"
+ETCD_LISTEN_CLIENT_URLS="https://192.168.2.10:2379"
+
+#[Clustering]
+ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.2.10:2380"
+ETCD_ADVERTISE_CLIENT_URLS="https://192.168.2.10:2379"
+ETCD_INITIAL_CLUSTER="etcd-1=https://192.168.2.10:2380,etcd-2=https://192.168.2.11:2380,etcd-3=https://192.168.2.12:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+ETCD_INITIAL_CLUSTER_STATE="new"
+
+#[Certs]
+CA_FILE="/opt/src/etcd/pki/ca.pem"
+CERT_FILE="/opt/src/etcd/pki/etcd.pem"
+KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
+TRUSTED_CA_FILE="/opt/src/etcd/pki/ca.pem"
+PEER_CA_FILE="/opt/src/etcd/pki/ca.pem"
+PEER_CERT_FILE="/opt/src/etcd/pki/etcd.pem"
+PEER_KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
+PEER_TRUSTED_CA_FILE="/opt/src/etcd/pki/ca.pem"
+EOF
+```
+#### 5.3.4 创建etcd系统服务
+```
+# EnvironmentFile参数引用etcd配置文件
 cat > /lib/systemd/system/etcd.service <<EOF
 [Unit]
 Description=Etcd Server
@@ -250,28 +279,29 @@ Wants=network-online.target
 [Service]
 Type=notify
 WorkingDirectory=/opt/src/etcd/
-ExecStart=/opt/src/etcd/etcd --name etcd-01 \\
-  --listen-peer-urls https://172.31.205.53:2380 \\
-  --listen-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
+EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
+ExecStart=/opt/src/etcd/etcd --name ${ETCD_NAME} \\
+  --data-dir ${ETCD_DATA_DIR} \\
   --quota-backend-bytes 8000000000 \\
-  --advertise-client-urls https://172.31.205.53:2379,http://127.0.0.1:2379 \\
-  --initial-cluster etcd-01=https://172.31.205.53:2380,etcd-02=https://172.31.205.54:2380,etcd-03=https://172.31.205.55:2380 \\
-  --data-dir /opt/src/etcd/data/ \\
-  --initial-advertise-peer-urls https://172.31.205.53:2380 \\
-  --ca-file /opt/src/etcd/pki/ca.pem \\
-  --cert-file /opt/src/etcd/pki/etcd.pem \\
-  --key-file /opt/src/etcd/pki/etcd-key.pem \\
-  --client-cert-auth   --trusted-ca-file /opt/src/etcd/pki/ca.pem \\
-  --peer-ca-file /opt/src/etcd/pki/ca.pem \\
-  --peer-cert-file /opt/src/etcd/pki/etcd.pem \\
-  --peer-key-file /opt/src/etcd/pki/etcd-key.pem \\
+  --listen-peer-urls ${ETCD_LISTEN_PEER_URLS} \\
+  --listen-client-urls ${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \\
+  --advertise-client-urls ${ETCD_ADVERTISE_CLIENT_URLS},http://127.0.0.1:2379 \\
+  --initial-cluster ${ETCD_INITIAL_CLUSTER} \\
+  --initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS} \\
+  --ca-file ${CA_FILE} \\
+  --cert-file ${CERT_FILE} \\
+  --key-file ${KEY_FILE} \\
+  --client-cert-auth   --trusted-ca-file ${TRUSTED_CA_FILE} \\
+  --peer-ca-file ${PEER_CA_FILE} \\
+  --peer-cert-file ${PEER_CERT_FILE} \\
+  --peer-key-file ${PEER_KEY_FILE} \\
   --peer-client-cert-auth \\
-  --peer-trusted-ca-file /opt/src/etcd/pki/ca.pem \\
+  --peer-trusted-ca-file ${PEER_TRUSTED_CA_FILE} \\
   --log-output stdout
 
 TimeoutSec=0
 RestartSec=2
-Restart=always
+Restart=on-failure
 LimitNOFILE=65536
 
 [Install]
@@ -282,7 +312,7 @@ systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
 ```
-#### 5.3.4 查看etcd集群状态
+#### 5.3.5 查看etcd集群状态
 ```
 # /opt/src/etcd/etcdctl cluster-health
 # 软链接etcd命令
