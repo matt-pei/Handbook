@@ -257,13 +257,8 @@ ETCD_INITIAL_CLUSTER_STATE="new"
 
 #[Certs]
 CA_FILE="/opt/src/etcd/pki/ca.pem"
-CERT_FILE="/opt/src/etcd/pki/etcd.pem"
-KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
-TRUSTED_CA_FILE="/opt/src/etcd/pki/ca.pem"
-PEER_CA_FILE="/opt/src/etcd/pki/ca.pem"
-PEER_CERT_FILE="/opt/src/etcd/pki/etcd.pem"
-PEER_KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
-PEER_TRUSTED_CA_FILE="/opt/src/etcd/pki/ca.pem"
+ETCD_CERT_FILE="/opt/src/etcd/pki/etcd.pem"
+ETCD_KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
 EOF
 ```
 #### 5.3.4 创建etcd系统服务
@@ -289,14 +284,14 @@ ExecStart=/opt/src/etcd/etcd --name ${ETCD_NAME} \\
   --initial-cluster ${ETCD_INITIAL_CLUSTER} \\
   --initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS} \\
   --ca-file ${CA_FILE} \\
-  --cert-file ${CERT_FILE} \\
-  --key-file ${KEY_FILE} \\
-  --client-cert-auth   --trusted-ca-file ${TRUSTED_CA_FILE} \\
-  --peer-ca-file ${PEER_CA_FILE} \\
-  --peer-cert-file ${PEER_CERT_FILE} \\
-  --peer-key-file ${PEER_KEY_FILE} \\
+  --cert-file ${ETCD_CERT_FILE} \\
+  --key-file ${ETCD_KEY_FILE} \\
+  --client-cert-auth   --trusted-ca-file ${CA_FILE} \\
+  --peer-ca-file ${CA_FILE} \\
+  --peer-cert-file ${ETCD_CERT_FILE} \\
+  --peer-key-file ${ETCD_KEY_FILE} \\
   --peer-client-cert-auth \\
-  --peer-trusted-ca-file ${PEER_TRUSTED_CA_FILE} \\
+  --peer-trusted-ca-file ${CA_FILE} \\
   --log-output stdout
 
 TimeoutSec=0
