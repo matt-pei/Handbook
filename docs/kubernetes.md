@@ -541,7 +541,7 @@ KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem"
 EOF
 ```
-#### 6.1.7 创建apiserver系统服务
+#### 6.1.8 创建apiserver系统服务
 ```
 vim /lib/systemd/system/kube-apiserver.service
 [Unit]
@@ -566,8 +566,41 @@ systemctl enable kube-apiserver
 ```
 
 ### 6.2 部署kube-controller-manager
+#### 6.2.1 添加controller配置文件
 ```
-# 1、[kube-controller-manager]
+mkdir -pv /etc/kubernetes/kube-controller/
+cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
+KUBE_CONTROLLER_MANAGER_OPTS="--v 2 \\
+  --leader-elect true \\
+  --address=127.0.0.1 \\
+  --cluster-cidr 172.16.0.0/16 \\
+  --log-dir /data/kubernetes/logs/kube-controller-manager \\
+  --master http://127.0.0.1:8080 \\
+  --service-account-private-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
+  --service-cluster-ip-range 10.0.0.0/24 \\
+  --root-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem"
+EOF
+```
+
+#### 6.2.2 创建controller系统服务
+```
+vim /lib/systemd/system/kube-controller.service
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+EnvironmentFile=/etc/kubernetes/kube-controller/kube-controller.conf
+ExecStart=/opt/src/kubernetes/server/bin/kube-controller-manager $KUBE_CONTROLLER_MANAGER_OPTS
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+# 启动controller服务
+systemctl daemon-reload
+systemctl restart kube-controller
+systemctl enable kube-controller
 ```
 
 ### 6.3 部署kube-proxy
