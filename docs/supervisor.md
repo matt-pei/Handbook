@@ -129,7 +129,7 @@ etcd-01                          RUNNING   pid 11373, uptime 0:01:07
 > 证书分别为：ca.pem/ca-key.pem/client.pem/client-key.pem/apiserver.pem/apiserver-key.pem/
 
 
-> 警告：在此下面启动脚本中`service-cluster-ip-range`参数设置Ip段的时候,是给集群中`service`设置的,与安装kube-controller启动脚本中等同参数
+> 警告：在此下面启动脚本中`service-cluster-ip-range`参数是集群中`Service`虚拟IP地址段,与安装kube-controller启动脚本中等同参数
 
 ```
 cat > /opt/src/kubernetes/server/bin/kube-apiserver.sh <<EOF
