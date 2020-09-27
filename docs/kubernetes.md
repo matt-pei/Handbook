@@ -534,7 +534,7 @@ KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --audit-log-maxage=30 \\
   --audit-log-maxbackup=3 \\
   --audit-log-maxsize=100 \\
-  --audit-log-path /data/kubernetes/logs/kube-apiserver/ \\
+  --audit-log-path /data/kubernetes/logs/kube-apiserver/kube-apiserver.log \\
   --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \\
   --log-dir  /data/kubernetes/logs/kube-apiserver/ \\
   --kubelet-client-certificate /opt/src/kubernetes/server/bin/pki/client.pem \\
