@@ -18,9 +18,9 @@
 ## 2、服务器规划
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
-| k8s-master | 172.31.205.62 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
-| k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd02 |
-| k8s-node01 | 172.31.205.62 | kubelet kube-proxy docker etcd03 |
+| k8s-master | 192.168.10.210 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
+| k8s-node01 | 192.168.10.211 | kubelet kube-proxy docker etcd02 |
+| k8s-node01 | 192.168.10.212 | kubelet kube-proxy docker etcd03 |
 
 > 此内容采用system方式启动服务，详内容中supervisor方式启动 
 
@@ -37,9 +37,9 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
-echo "172.31.205.53   k8s-master" >> /etc/hosts
-echo "172.31.205.54   k8s-node01" >> /etc/hosts
-echo "172.31.205.55   k8s-node02" >> /etc/hosts
+echo "192.168.10.210   k8s-master" >> /etc/hosts
+echo "192.168.10.211   k8s-node01" >> /etc/hosts
+echo "192.168.10.212   k8s-node02" >> /etc/hosts
 ```
 - 2、关闭防火墙
 ```
@@ -49,7 +49,6 @@ sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
 # 关闭firewalld服务
 systemctl stop firewalld.service
 systemctl disable firewalld.service
-
 ```
 
 ## 4、自签CA颁发证书
@@ -62,7 +61,6 @@ curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
 curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-certinfo
 # 添加执行权限
 chmod +x /usr/bin/cfssl*
-
 ```
 ### 4.2、生成CA证书
 #### 4.2.1 创建CA证书请求文件（csr）
@@ -92,7 +90,6 @@ cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 EOF
 # 生成CA证书和私钥
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
-
 ```
 #### 4.2.2 创建基于根证书的config配置文件
 
@@ -133,9 +130,7 @@ cat > /opt/kubernetes/pki/ca-config.json <<EOF
     }
 }
 EOF
-
 ```
-
 
 ## 5、部署etcd集群
  
@@ -152,9 +147,11 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "172.31.205.53",
-        "172.31.205.54",
-        "172.31.205.55"
+        "192.168.10.210",
+        "192.168.10.211",
+        "192.168.10.212",
+        "192.168.10.213",
+        "192.168.10.214"
     ],
     "key": {
         "algo": "rsa",
@@ -173,7 +170,6 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 EOF
 # 签发etcd证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
-
 ```
 
 > etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
@@ -240,18 +236,19 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 
 #### 5.3.3 添加etcd配置文件
 ```
-mkdir -pv /etcd/kubernetes/etcd
+mkdir -pv /etc/kubernetes/etcd/
+mkdir -pv /data/kubernetes/etcd/data/
 cat > /etc/kubernetes/etcd/etcd.conf <<EOF
 #[Member]
 ETCD_NAME="etcd-01"
-ETCD_DATA_DIR="/opt/src/etcd/data/"
-ETCD_LISTEN_PEER_URLS="https://192.168.2.10:2380"
-ETCD_LISTEN_CLIENT_URLS="https://192.168.2.10:2379"
+ETCD_DATA_DIR="/data/kubernetes/etcd/data/"
+ETCD_LISTEN_PEER_URLS="https://192.168.10.210:2380"
+ETCD_LISTEN_CLIENT_URLS="https://192.168.10.210:2379"
 
 #[Clustering]
-ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.2.10:2380"
-ETCD_ADVERTISE_CLIENT_URLS="https://192.168.2.10:2379"
-ETCD_INITIAL_CLUSTER="etcd-1=https://192.168.2.10:2380,etcd-2=https://192.168.2.11:2380,etcd-3=https://192.168.2.12:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.10.210:2380"
+ETCD_ADVERTISE_CLIENT_URLS="https://192.168.10.210:2379"
+ETCD_INITIAL_CLUSTER="etcd-01=https://192.168.10.210:2380,etcd-02=https://192.168.10.211:2380,etcd-03=https://192.168.10.212:2380"
 ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER_STATE="new"
 
@@ -264,7 +261,7 @@ EOF
 #### 5.3.4 创建etcd系统服务
 ```
 # EnvironmentFile参数引用etcd配置文件
-cat > /lib/systemd/system/etcd.service <<EOF
+vim /lib/systemd/system/etcd.service
 [Unit]
 Description=Etcd Server
 Documentation=https://github.com/coreos
@@ -275,23 +272,23 @@ Wants=network-online.target
 Type=notify
 WorkingDirectory=/opt/src/etcd/
 EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
-ExecStart=/opt/src/etcd/etcd --name ${ETCD_NAME} \\
-  --data-dir ${ETCD_DATA_DIR} \\
-  --quota-backend-bytes 8000000000 \\
-  --listen-peer-urls ${ETCD_LISTEN_PEER_URLS} \\
-  --listen-client-urls ${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \\
-  --advertise-client-urls ${ETCD_ADVERTISE_CLIENT_URLS},http://127.0.0.1:2379 \\
-  --initial-cluster ${ETCD_INITIAL_CLUSTER} \\
-  --initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS} \\
-  --ca-file ${CA_FILE} \\
-  --cert-file ${ETCD_CERT_FILE} \\
-  --key-file ${ETCD_KEY_FILE} \\
-  --client-cert-auth   --trusted-ca-file ${CA_FILE} \\
-  --peer-ca-file ${CA_FILE} \\
-  --peer-cert-file ${ETCD_CERT_FILE} \\
-  --peer-key-file ${ETCD_KEY_FILE} \\
-  --peer-client-cert-auth \\
-  --peer-trusted-ca-file ${CA_FILE} \\
+ExecStart=/opt/src/etcd/etcd --name= \
+  --data-dir= \
+  --quota-backend-bytes=8000000000 \
+  --listen-peer-urls= \
+  --listen-client-urls=,http://127.0.0.1:2379 \
+  --advertise-client-urls=,http://127.0.0.1:2379 \
+  --initial-cluster= \
+  --initial-advertise-peer-urls= \
+  --ca-file= \
+  --cert-file= \
+  --key-file= \
+  --client-cert-auth   --trusted-ca-file= \
+  --peer-ca-file= \
+  --peer-cert-file= \
+  --peer-key-file= \
+  --peer-client-cert-auth \
+  --peer-trusted-ca-file= \
   --log-output stdout
 
 TimeoutSec=0
@@ -301,7 +298,6 @@ LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
-EOF
 # 启动etcd服务
 systemctl daemon-reload
 systemctl restart etcd
@@ -314,16 +310,16 @@ systemctl enable etcd
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
 # 查看etcd集群健康检查
 etcdctl cluster-health
-member 26bb67943ff3802a is healthy: got healthy result from http://127.0.0.1:2379
-member 68b27ec2be75f5c1 is healthy: got healthy result from http://127.0.0.1:2379
-member ddae50d640aac69b is healthy: got healthy result from http://127.0.0.1:2379
+member c9b857597f7df17 is healthy: got healthy result from http://127.0.0.1:2379
+member 172b7f8498de02c7 is healthy: got healthy result from http://127.0.0.1:2379
+member bddbddce237db3d0 is healthy: got healthy result from http://127.0.0.1:2379
 cluster is healthy
 
 # 查看etcd集群在线状态
 etcdctl member list
-cfeb24d3c6969a88: name=etcd-02 peerURLs=https://172.31.205.54:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.54:2379 isLeader=false
-ef8033e5768a832a: name=etcd-03 peerURLs=https://172.31.205.55:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.55:2379 isLeader=false
-f1de9d5a9c924cc5: name=etcd-01 peerURLs=https://172.31.205.53:2380 clientURLs=http://127.0.0.1:2379,https://172.31.205.53:2379 isLeader=true
+c9b857597f7df17: name=etcd-02 peerURLs=https://192.168.10.211:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.211:2379 isLeader=false
+172b7f8498de02c7: name=etcd-01 peerURLs=https://192.168.10.210:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.210:2379 isLeader=true
+bddbddce237db3d0: name=etcd-03 peerURLs=https://192.168.10.212:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.212:2379 isLeader=false
 ```
 
 ## 6、安装Master节点组件
