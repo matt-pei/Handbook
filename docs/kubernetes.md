@@ -272,23 +272,23 @@ Wants=network-online.target
 Type=notify
 WorkingDirectory=/opt/src/etcd/
 EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
-ExecStart=/opt/src/etcd/etcd --name= \
-  --data-dir= \
+ExecStart=/opt/src/etcd/etcd --name=${ETCD_NAME} \
+  --data-dir=${ETCD_DATA_DIR} \
   --quota-backend-bytes=8000000000 \
-  --listen-peer-urls= \
-  --listen-client-urls=,http://127.0.0.1:2379 \
-  --advertise-client-urls=,http://127.0.0.1:2379 \
-  --initial-cluster= \
-  --initial-advertise-peer-urls= \
-  --ca-file= \
-  --cert-file= \
-  --key-file= \
-  --client-cert-auth   --trusted-ca-file= \
-  --peer-ca-file= \
-  --peer-cert-file= \
-  --peer-key-file= \
+  --listen-peer-urls=${ETCD_LISTEN_PEER_URLS} \
+  --listen-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
+  --advertise-client-urls=${ETCD_ADVERTISE_CLIENT_URLS},http://127.0.0.1:2379 \
+  --initial-cluster=${ETCD_INITIAL_CLUSTER} \
+  --initial-advertise-peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} \
+  --ca-file=${CA_FILE} \
+  --cert-file=${CERT_FILE} \
+  --key-file=${KEY_FILE} \
+  --client-cert-auth   --trusted-ca-file=${TRUSTED_CA_FILE} \
+  --peer-ca-file=${PEER_CA_FILE} \
+  --peer-cert-file=${PEER_CERT_FILE} \
+  --peer-key-file=${PEER_KEY_FILE} \
   --peer-client-cert-auth \
-  --peer-trusted-ca-file= \
+  --peer-trusted-ca-file=${PEER_TRUSTED_CA_FILE} \
   --log-output stdout
 
 TimeoutSec=0
