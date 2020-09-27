@@ -603,10 +603,42 @@ systemctl restart kube-controller
 systemctl enable kube-controller
 ```
 
-### 6.3 部署kube-proxy
+### 6.3 部署kube-scheduler
+#### 6.3.1 添加kube-scheduler配置文件
 ```
-# 1、[kube-scheduler]
+mkdir -pv /etc/kubernetes/kube-scheduler/
+cat > /etc/kubernetes/kube-scheduler/kube-scheduler.conf <<EOF
+KUBE_SCHEDULER_OPTS="--logtostderr=false \\
+--v=2 \\
+--leader-elect \\
+--master=127.0.0.1:8080 \\
+--address=127.0.0.1 \\
+--log-dir=/data/logs/kubernetes/kube-scheduler"
+EOF
 ```
+#### 6.3.2 创建kube-scheduler系统服务
+```
+vim /lib/systemd/system/kube-scheduler.service
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+EnvironmentFile=/etc/kubernetes/kube-scheduler/kube-scheduler.conf
+ExecStart=/opt/src/kubernetes/server/bin/kube-scheduler $KUBE_SCHEDULER_OPTS
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+#### 6.3.3 启动kube-scheduler服务
+```
+systemctl daemon-reload
+systemctl restart kube-scheduler
+systemctl enable kube-scheduler
+```
+
 
 ## 7、安装Node节点组件
 
