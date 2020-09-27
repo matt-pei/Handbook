@@ -159,11 +159,11 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
     },
     "names": [
         {
-            "C": "CN",
-            "ST": "Beijing",
-            "L": "Beijing",
-            "O": "kubernetes",
-            "OU": "System"
+          "C": "CN",
+          "ST": "Beijing",
+          "L": "Beijing",
+          "O": "kubernetes",
+          "OU": "System"
         }
     ]
 }
@@ -348,9 +348,11 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
     "hosts": [
-    "172.31.205.53",
-    "172.31.205.54",
-    "172.31.205.55"
+        "192.168.10.210",
+        "192.168.10.211",
+        "192.168.10.212",
+        "192.168.10.213",
+        "192.168.10.214"
     ],
     "key": {
         "algo": "rsa",
@@ -358,11 +360,11 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
     },
     "names": [
         {
-            "C": "CN",
-            "ST": "Beijing",
-            "L": "Beijing",
-            "O": "kubernetes",
-            "OU": "System"
+          "C": "CN",
+          "ST": "Beijing",
+          "L": "Beijing",
+          "O": "kubernetes",
+          "OU": "System"
         }
     ]
 }
@@ -378,11 +380,15 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     "CN": "apiserver",
     "hosts": [
         "127.0.0.1",
-        "172.31.205.53",
         "kubernetes.default",
         "kubernetes.default.svc",
         "kubernetes.default.svc.cluster",
-        "kubernetes.default.svc.cluster.local"
+        "kubernetes.default.svc.cluster.local",
+        "192.168.10.210",
+        "192.168.10.211",
+        "192.168.10.212",
+        "192.168.10.213",
+        "192.168.10.214"
     ],
     "key": {
         "algo": "rsa",
@@ -408,7 +414,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
 # 配置apiserver日志审计
 cat > /opt/src/kubernetes/server/bin/conf/audit.yaml <<EOF
-apiVersion: audit.k8s.io/v1beta1 # This is required.
+apiVersion: audit.k8s.io/v1 # This is required.
 kind: Policy
 # Don't generate audit events for all requests in RequestReceived stage.
 omitStages:
@@ -481,6 +487,7 @@ EOF
 #### 6.1.5 拷贝apiserver相关证书
 ```
 # 拷贝证书
+mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
 cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/ca-key.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes/server/bin/pki/
@@ -501,19 +508,14 @@ EOF
 
 - 2、[使用supervisor启动apiserver](./supervisor.md)
 
-
-#### 6.1.7 创建apiserver系统服务
+#### 6.1.7 添加apiserver配置文件
 ```
-cat > /lib/systemd/system/kube-apiserver.service <<EOF
-[Unit]
-Description=Kubernetes API Server
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-After=network.target
-[Service]
-ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
-  --apiserver-count 1 \\
+mkdir -pv /etc/kubernetes/kube-apiserver/
+cat > /etc/kubernetes/kube-apiserver/kube-apiserver.conf <<EOF
+KUBE_APISERVER_OPTS="--apiserver-count 1 \\
+  --v=2 \\
   --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \\
-  --bind-address 172.31.205.53 \\
+  --bind-address 192.168.10.210 \\
   --authorization-mode RBAC,Node \\
   --enable-bootstrap-token-auth true \\
   --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
@@ -524,8 +526,8 @@ ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
   --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \\
   --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \\
   --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \\
-  --etcd-servers https://172.31.205.53:2379,https://172.31.205.54:2379,https://172.31.205.55:2379 \\
-  --service-cluster-ip-range 10.10.0.0/16 \\
+  --etcd-servers https://192.168.10.210:2379,https://192.168.10.211:2379,https://192.168.10.212:2379 \\
+  --service-cluster-ip-range 10.0.0.0/24 \\
   --service-node-port-range 3000-29999 \\
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
   --target-ram-mb=1024 \\
@@ -536,15 +538,27 @@ ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver \\
   --audit-policy-file /opt/src/kubernetes/server/bin/conf/audit.yaml \\
   --log-dir  /data/kubernetes/logs/kube-apiserver/ \\
   --kubelet-client-certificate /opt/src/kubernetes/server/bin/pki/client.pem \\
-  --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem \\
-  --v=2
+  --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem"
+EOF
+```
+#### 6.1.7 创建apiserver系统服务
+```
+vim /lib/systemd/system/kube-apiserver.service
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/kubernetes/kube-apiserver/kube-apiserver.conf
+ExecStart=/opt/src/kubernetes/server/bin/kube-apiserver $KUBE_APISERVER_OPTS
 Restart=on-failure
 RestartSec=5
 Type=notify
 LimitNOFILE=65536
+
 [Install]
 WantedBy=multi-user.target
-EOF
 # 启动apiserver服务
 systemctl daemon-reload
 systemctl restart kube-apiserver
