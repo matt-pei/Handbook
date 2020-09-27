@@ -559,7 +559,9 @@ LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
-# 启动apiserver服务
+```
+#### 6.1.9 启动apiserver服务
+```
 systemctl daemon-reload
 systemctl restart kube-apiserver
 systemctl enable kube-apiserver
@@ -597,7 +599,9 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-# 启动controller服务
+```
+#### 6.2.3 启动controller系统服务
+```
 systemctl daemon-reload
 systemctl restart kube-controller
 systemctl enable kube-controller
