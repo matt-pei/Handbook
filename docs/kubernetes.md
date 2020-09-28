@@ -9,7 +9,7 @@
 
 - 单master集群
 
-<img alt="k8s架构图" src="../images/kuernetes/20191008-01.png" />
+<img alt="k8s架构图" src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" />
 
 - 多master集群（HA）
 
@@ -21,8 +21,6 @@
 | k8s-master | 192.168.10.210 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
 | k8s-node01 | 192.168.10.211 | kubelet kube-proxy docker etcd02 |
 | k8s-node01 | 192.168.10.212 | kubelet kube-proxy docker etcd03 |
-
-> 此内容采用system方式启动服务，详内容中supervisor方式启动 
 
 ## 3、系统初始化设置
 - 1、设置主机名
@@ -190,21 +188,23 @@ mkdir -p /opt/src/etcd/{pki,logs}
 ```
 #### 5.2.1 加速下载
 ```
-curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
-
 curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
+
+curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
 ```
 
 ### 5.3 配置etcd
 #### 5.3.1 拷贝密钥到node节点
 ```
 # master生成密钥
-# ssh-keygen -t rsa -P ''
-# -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
 ssh-keygen -t rsa
 ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
 ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
 ```
+> ssh-keygen -t rsa -P ''
+> 
+> -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
+
 #### 5.3.2 拷贝证书到node节点
 ```
 # 3、拷贝证书
