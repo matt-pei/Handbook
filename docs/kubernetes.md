@@ -568,6 +568,9 @@ systemctl enable kube-apiserver
 ```
 
 ### 6.2 部署kube-controller-manager
+
+- 3、[使用spuervisor启动kube-controller](./supervisor.md)
+
 #### 6.2.1 添加controller配置文件
 ```
 mkdir -pv /etc/kubernetes/kube-controller/
@@ -608,6 +611,9 @@ systemctl enable kube-controller
 ```
 
 ### 6.3 部署kube-scheduler
+
+- 4、[使用spuervisor启动kube-scheduler](./supervisor.md)
+
 #### 6.3.1 添加kube-scheduler配置文件
 ```
 mkdir -pv /etc/kubernetes/kube-scheduler/
