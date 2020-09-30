@@ -270,25 +270,24 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-WorkingDirectory=/opt/src/etcd/
 EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
 ExecStart=/opt/src/etcd/etcd --name=${ETCD_NAME} \
   --data-dir=${ETCD_DATA_DIR} \
   --quota-backend-bytes=8000000000 \
   --listen-peer-urls=${ETCD_LISTEN_PEER_URLS} \
   --listen-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
-  --advertise-client-urls=${ETCD_ADVERTISE_CLIENT_URLS},http://127.0.0.1:2379 \
+  --advertise-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
   --initial-cluster=${ETCD_INITIAL_CLUSTER} \
   --initial-advertise-peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} \
-  --ca-file=${CA_FILE} \
-  --cert-file=${CERT_FILE} \
-  --key-file=${KEY_FILE} \
-  --client-cert-auth   --trusted-ca-file=${TRUSTED_CA_FILE} \
-  --peer-ca-file=${PEER_CA_FILE} \
-  --peer-cert-file=${PEER_CERT_FILE} \
-  --peer-key-file=${PEER_KEY_FILE} \
+  --ca-file=/opt/src/etcd/pki/ca.pem \
+  --cert-file=/opt/src/etcd/pki/etcd.pem \
+  --key-file=/opt/src/etcd/pki/etcd-key.pem \
+  --client-cert-auth   --trusted-ca-file=/opt/src/etcd/pki/ca.pem \
+  --peer-ca-file=/opt/src/etcd/pki/ca.pem \
+  --peer-cert-file=/opt/src/etcd/pki/etcd.pem \
+  --peer-key-file=${ETCD_KEY_FILE} \
   --peer-client-cert-auth \
-  --peer-trusted-ca-file=${PEER_TRUSTED_CA_FILE} \
+  --peer-trusted-ca-file=${CA_FILE} \
   --log-output stdout
 
 TimeoutSec=0
