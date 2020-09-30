@@ -472,6 +472,125 @@ supervisorctl status
 kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
 ```
 
+---
+---
 
-### 2、创建启动脚本
+### kube-proxy
+#### set-cluster
+```
+cd /opt/src/kubernetes-node/node/bin/conf/
+# 指定apiserver的地址和证书位置
+kubectl config set-cluster myk8s \
+--certificate-authority=/opt/src/kubernetes-node/node/bin/pki/ca.pem \
+--embed-certs=true \
+--server=https://172.31.205.59:6443 \
+--kubeconfig=kube-proxy.kubeconfig
+```
+#### set-credentials
+```
+# 设置客户端认证参数，指定client证书和秘钥
+kubectl config set-credentials kube-proxy \
+  --client-certificate=/opt/src/kubernetes-node/node/bin/pki/kube-porxy.pem \
+  --client-key=/opt/src/kubernetes-node/node/bin/pki/kube-porxy-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-proxy.kubeconfig
+```
+#### set-context
+```
+# 关联用户和集群
+kubectl config set-context k8s-context \
+--cluster=myk8s \
+--user=kube-proxy \
+--kubeconfig=kube-proxy.kubeconfig
+```
+#### use-context
+```
+# 设置当前上下文
+kubectl config use-context k8s-context --kubeconfig=kube-proxy.kubeconfig
+```
+#### 7.2.4 配置ipvs
+```
+# vim /root/ipvs.sh
+cat > /root/ipvs.sh <<\EOF
+#!/bin/bash 
+ipvs_mods_dir="/usr/lib/modules/$(uname -r)/kernel/net/netfilter/ipvs"
+for i in $(ls $ipvs_mods_dir|grep -o "^[^.]*")
+do
+  /sbin/modinfo -F filename $i &>/dev/null
+  if [ $? -eq 0 ];then
+    /sbin/modprobe $i
+  fi
+done
+EOF
+# 
+chmod +x /root/ipvs.sh
+sh /root/ipvs.sh
+lsmod |grep ip_vs
+```
+或者
+```
+cat > /etc/sysconfig/modules/ipvs.modules <<EOF
+#!/bin/bash
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+EOF
+# 添加文件权限
+chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules
+# 查看加载
+lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+```
 
+#### 7.2.5 创建启动kube-proxy脚本
+```
+cat > /opt/src/kubernetes-node/node/bin/kube-proxy.sh <<EOF
+#!/bin/bash
+/opt/src/kubernetes-node/node/bin/kube-proxy \\
+  --cluster-cidr 192.168.0.0/16 \\
+  --hostname-override k8s-node01 \\
+  --proxy-mode=ipvs \\
+  --ipvs-scheduler=nq \\
+  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig
+EOF
+# 添加脚本执行权限
+chmod +x /opt/src/kubernetes-node/node/bin/kube-proxy.sh
+```
+#### 7.2.6 创建supervisor启动kube-proxy配置
+```
+# 创建kube-porxy日志目录
+mkdir -p /data/kubernetes/logs/kube-porxy
+# 创建supervisor配置文件
+cat > /etc/supervisord.d/kube-porxy.ini <<EOF
+[program:kube-proxy]
+command=/opt/src/kubernetes-node/node/bin/kube-proxy.sh              ; the program (relative uses PATH, can take args)
+numprocs=1                                                           ; number of processes copies to start (def 1)
+directory=/opt/src/kubernetes-node/node/bin/                          ; directory to cwd to before exec (def no cwd)
+autostart=true                                                       ; start at supervisord start (default: true)
+autorestart=true                                                     ; retstart at unexpected quit (default: true)
+startsecs=30                                                         ; number of secs prog must stay running (def. 1)
+startretries=3                                                       ; max # of serial start failures (default 3)
+exitcodes=0,2                                                        ; 'expected' exit codes for process (default 0,2)
+stopsignal=QUIT                                                      ; signal used to kill process (default TERM)
+stopwaitsecs=10                                                      ; max num secs to wait b4 SIGKILL (default 10)
+user=root                                                            ; setuid to this UNIX account to run the program
+redirect_stderr=true                                                 ; redirect proc stderr to stdout (default false)
+stdout_logfile=/data/kubernetes/logs/kube-porxy/proxy.stdout.log     ; stderr log path, NONE for none; default AUTO
+stdout_logfile_maxbytes=64MB                                         ; max # logfile bytes b4 rotation (default 50MB)
+stdout_logfile_backups=4                                             ; # of stdout logfile backups (default 10)
+stdout_capture_maxbytes=1MB                                          ; number of bytes in 'capturemode' (default 0)
+stdout_events_enabled=false                                          ; emit events on stdout writes (default false)
+EOF
+```
+#### 7.2.7 查看kube-proxy服务
+```
+# 更新controller配置
+supervisorctl update
+
+kube-proxy: added process group
+# 查看启动状态
+supervisorctl status
+
+kube-proxy                       RUNNING   pid 30601, uptime 0:00:48
+```
