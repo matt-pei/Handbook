@@ -647,6 +647,13 @@ systemctl daemon-reload
 systemctl restart kube-scheduler
 systemctl enable kube-scheduler
 ```
+#### 6.3.4 创建kubectl软链接和检查集群状态
+```
+ln -s /opt/src/kubernetes/server/bin/kubectl /usr/local/sbin/
+# 检查集群状态
+kubectl get cs
+kubectl get cs -o yaml
+```
 
 
 ## 7、安装Node节点组件
