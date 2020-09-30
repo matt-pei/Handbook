@@ -686,9 +686,11 @@ cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
     "CN": "k8s-kubelet",
     "hosts": [
-    "172.31.205.47",
-    "172.31.205.48",
-    "172.31.205.49"
+        "192.168.10.210",
+        "192.168.10.211",
+        "192.168.10.212",
+        "192.168.10.213",
+        "192.168.10.214"
     ],
     "key": {
         "algo": "rsa",
@@ -737,7 +739,6 @@ ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
 
 #### 创建k8s-node.yaml
 ```
-cat > /opt/src/kubernetes-node/node/bin/conf/k8s-node.yaml <<EOF
 cat > /opt/src/kubernetes/server/bin/conf/k8s-node.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -753,6 +754,7 @@ subjects:
   name: k8s-node
 EOF
 # 
+cd /opt/src/kubernetes/server/bin/conf/
 kubectl create -f k8s-node.yaml
 ```
 
@@ -761,20 +763,79 @@ kubectl create -f k8s-node.yaml
 > [可选项] 如使用supervisor启动kubelet服务,请点击跳转“使用supervisor启动kubelet”并忽略下方 “7.1.5 创建kubelet系统服务”
 
 - 5、[使用supervisor启动kubelet](./supervisor.md)
-
-#### 7.1.5 创建kubelet系统服务
+#### 7.1.5 创建kubelet.kubeconfig文件
 ```
+cat > /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig <<EOF
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: 
+    certificate-authority: /opt/src/kubernetes-node/node/bin/pki/ca.pem
+    server: https://192.168.10.213:6443
+  name: default-cluster
+contexts:
+- context:
+    cluster: default-cluster
+    namespace: default
+    user: default-auth
+  name: default-context
+current-context: default-context
+kind: Config
+preferences: {}
+users:
+- name: default-auth
+  user:
+    client-certificate: /opt/src/kubernetes-node/node/bin/pki/client.pem
+    client-key: /opt/src/kubernetes-node/node/bin/pki/client-key.pem
+EOF
 ```
-#### 7.1.6 查看kubelet服务
+#### 7.1.6 添加kubelet配置文件
 ```
-# 更新controller配置
-supervisorctl update
+mkdir -pv /etc/kubernetes/kubelet/
+mkdir -p /data/kubernetes/logs/kubelet
+cat > /etc/kubernetes/kubelet/kubelet.conf <<EOF
+KUBELET_OPTS="--v=2 \\
+  --anonymous-auth=false \\
+  --cgroup-driver systemd \\
+  --cluster-dns 192.168.0.2 \\
+  --cluster-domain cluster.local \\
+  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \\
+  --fail-swap-on=false \\
+  --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \\
+  --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \\
+  --tls-private-key-file /opt/src/kubernetes-node/node/bin/pki/kubelet-key.pem \\
+  --hostname-override k8s-node01 \\
+  --image-gc-high-threshold 20 \\
+  --image-gc-low-threshold 10 \\
+  --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig \\
+  --log-dir /data/kubernetes/logs/kubelet \\
+  --pod-infra-container-image k8s.gcr.io/pause:3.1 \\
+  --root-dir /data/kubernetes/logs/kubelet"
+EOF
+```
+#### 7.1.7 创建Kubelet系统服务
+```
+cat > /lib/systemd/system/kubelet.service <<\EOF
+[Unit]
+Description=Kubernetes Kubelet
+After=docker.service
+Before=docker.service
 
-kube-kubelet: added process group
-# 查看启动状态
-supervisorctl status
+[Service]
+EnvironmentFile=/etc/kubernetes/kubelet/kubelet.conf
+ExecStart=/opt/src/kubernetes-node/node/bin/kubelet $KUBELET_OPTS
+Restart=on-failure
+LimitNOFILE=65536
 
-kube-kubelet                     RUNNING   pid 16359, uptime 0:00:31
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+#### 7.1.8 启动Kubelet系统服务
+```
+systemctl daemon-reload
+systemctl restart kubelet
+systemctl enable kubelet
 ```
 
 #### 7.1.7 查看node节点信息
