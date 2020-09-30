@@ -659,6 +659,8 @@ kubectl get cs -o yaml
 ## 7、安装Node节点组件
 
 > 注意：node节点上需要安装的组件为：kubelet、kubeproxy和docker
+> 
+> 下面操作需要在所有node节点上
 
 ### 7.1 部署kubelet
 - [安装docker](../docs/docker.md)
@@ -681,6 +683,9 @@ mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
 ```
 
 #### 7.1.2 签发kubelet证书
+
+> 在CA服务器上签发
+
 ```
 cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
@@ -712,7 +717,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 ```
 
 #### 7.1.3 拷贝kubelet证书到node节点
-- 拷贝证书到node节点上对应存放证书目录下
+- 从CA拷贝证书到各个node节点上证书目录下
 ```
 # node01
 scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
@@ -758,8 +763,6 @@ cd /opt/src/kubernetes/server/bin/conf/
 kubectl create -f k8s-node.yaml
 ```
 
-> kubectl create clusterrolebinding k8s-node --clusterrole=system:node-bootstrapper --user=k8s-node
-
 > [可选项] 如使用supervisor启动kubelet服务,请点击跳转“使用supervisor启动kubelet”并忽略下方 “7.1.5 创建kubelet系统服务”
 
 - 5、[使用supervisor启动kubelet](./supervisor.md)
@@ -790,6 +793,7 @@ users:
 EOF
 ```
 #### 7.1.6 添加kubelet配置文件
+> 警告：修改每个node节点上`--hostname-override`参数
 ```
 mkdir -pv /etc/kubernetes/kubelet/
 mkdir -p /data/kubernetes/logs/kubelet
