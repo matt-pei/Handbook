@@ -540,6 +540,8 @@ EOF
 
 #### 6.1.7 添加apiserver配置文件
 > 🚨警告：修改`--service-cluster-ip-range`参数ip范围，此为集群中service的Ip范围
+>
+> 🚨警告：修改`--etcd-servers`参数etcd集群地址
 ```
 mkdir -pv /etc/kubernetes/kube-apiserver/
 cat > /etc/kubernetes/kube-apiserver/kube-apiserver.conf <<EOF
