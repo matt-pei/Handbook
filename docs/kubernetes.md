@@ -1015,6 +1015,7 @@ EOF
 systemctl daemon-reload
 systemctl restart kube-proxy
 systemctl enable kube-proxy
+systemctl status kube-proxy
 ```
 
 
