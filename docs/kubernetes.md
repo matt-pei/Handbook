@@ -818,7 +818,7 @@ kubectl create -f k8s-node.yaml
 ```
 
 #### 7.1.5 创建kubelet.kubeconfig文件
-> 🚨警告：修改`server`参数API-server地址
+> 🚨警告：修改`server`参数,API-Server地址
 ```
 cat > /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig <<EOF
 apiVersion: v1
@@ -986,6 +986,7 @@ chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipv
 lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 ```
 #### 7.2.4 创建kube-proxy.kubeconfig文件
+> 🚨警告：修改`server`参数,API-Server地址
 ```
 mkdir -pv /opt/src/kubernetes-node/node/bin/conf
 cat > /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig <<EOF
