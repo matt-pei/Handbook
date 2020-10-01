@@ -625,7 +625,7 @@ KUBE_CONTROLLER_MANAGER_OPTS="--leader-elect true \\
   --service-cluster-ip-range 10.0.0.0/24 \\
   --service-account-private-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
   --root-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \\
-  --v 2""
+  --v 2"
 EOF
 ```
 
