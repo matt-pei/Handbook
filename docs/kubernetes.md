@@ -540,7 +540,9 @@ EOF
 
 #### 6.1.7 添加apiserver配置文件
 > 🚨警告：修改`--service-cluster-ip-range`参数ip范围，此为集群中service的Ip范围
+>
 > 🚨警告：修改`--bind-address`绑定apiserver地址
+> 
 > 🚨警告：修改`--etcd-servers`参数etcd集群地址
 ```
 mkdir -pv /etc/kubernetes/kube-apiserver/
@@ -609,6 +611,8 @@ systemctl status kube-apiserver
 
 #### 6.2.1 添加controller配置文件
 > 🚨警告：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段
+>
+> 🚨警告：修改`--service-cluster-ip-range`参数,同apiserver配置一样
 ```
 mkdir -pv /etc/kubernetes/kube-controller/
 cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
