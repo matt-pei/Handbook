@@ -951,8 +951,41 @@ scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node01:/opt/src/kubernetes-node/n
 scp /opt/kubernetes/pki/kube-porxy.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
 scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
 ```
+#### 7.2.3 配置ipvs
+```
+# vim /root/ipvs.sh
+cat > /root/ipvs.sh <<\EOF
+#!/bin/bash 
+ipvs_mods_dir="/usr/lib/modules/$(uname -r)/kernel/net/netfilter/ipvs"
+for i in $(ls $ipvs_mods_dir|grep -o "^[^.]*")
+do
+  /sbin/modinfo -F filename $i &>/dev/null
+  if [ $? -eq 0 ];then
+    /sbin/modprobe $i
+  fi
+done
+EOF
+# 
+chmod +x /root/ipvs.sh
+sh /root/ipvs.sh
+lsmod |grep ip_vs
 
-#### 7.2.3 创建kube-proxy.kubeconfig文件
+###
+
+cat > /etc/sysconfig/modules/ipvs.modules <<EOF
+#!/bin/bash
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+EOF
+# 添加文件权限
+chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules
+# 查看加载
+lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+```
+#### 7.2.4 创建kube-proxy.kubeconfig文件
 ```
 mkdir -pv /opt/src/kubernetes-node/node/bin/conf
 cat > /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig <<EOF
@@ -977,7 +1010,7 @@ users:
     client-key: /opt/src/kubernetes-node/node/bin/pki/kube-porxy-key.pem
 EOF
 ```
-#### 7.2.4 创建kube-proxy配置文件
+#### 7.2.5 创建kube-proxy配置文件
 > 🚨警告：修改`--cluster-cidr`参数ip地址段,此ip段为pod的ip地址段
 >
 > 🚨警告：修改`--hostname-override`参数主机名
@@ -993,7 +1026,7 @@ KUBE_PROXY_OPTS="--v=2 \\
   --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig"
 EOF
 ```
-#### 7.2.5 创建kube-proxy系统服务
+#### 7.2.6 创建kube-proxy系统服务
 ```
 cat > /lib/systemd/system/kube-proxy.service <<\EOF
 [Unit]
@@ -1010,7 +1043,7 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 ```
-#### 7.2.6 启动kube-proxy系统服务
+#### 7.2.7 启动kube-proxy系统服务
 ```
 systemctl daemon-reload
 systemctl restart kube-proxy
