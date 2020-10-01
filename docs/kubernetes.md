@@ -673,7 +673,7 @@ EOF
 #### 6.3.2 创建kube-scheduler系统服务
 ```
 # vim /lib/systemd/system/kube-scheduler.service
-cat > /lib/systemd/system/kube-scheduler.service <<EOF
+cat > /lib/systemd/system/kube-scheduler.service <<\EOF
 [Unit]
 Description=Kubernetes Scheduler
 Documentation=https://github.com/kubernetes/kubernetes
