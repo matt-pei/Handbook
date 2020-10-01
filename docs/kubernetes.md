@@ -616,22 +616,22 @@ systemctl status kube-apiserver
 ```
 mkdir -pv /etc/kubernetes/kube-controller/
 cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
-KUBE_CONTROLLER_MANAGER_OPTS="--v 2 \\
-  --leader-elect true \\
+KUBE_CONTROLLER_MANAGER_OPTS="--leader-elect true \\
   --address=127.0.0.1 \\
   --cluster-cidr 172.16.0.0/16 \\
-  --log-dir /data/kubernetes/logs/kube-controller-manager \\
   --master http://127.0.0.1:8080 \\
-  --service-account-private-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
+  --log-dir /data/kubernetes/logs/kube-controller-manager \\
   --service-cluster-ip-range 10.0.0.0/24 \\
-  --root-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem"
+  --service-account-private-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
+  --root-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \\
+  --v 2""
 EOF
 ```
 
 #### 6.2.2 创建controller系统服务
 ```
 # vim /lib/systemd/system/kube-controller.service
-cat > /lib/systemd/system/kube-controller.service <<EOF
+cat > /lib/systemd/system/kube-controller.service <<\EOF
 [Unit]
 Description=Kubernetes Controller Manager
 Documentation=https://github.com/kubernetes/kubernetes
