@@ -970,7 +970,7 @@ chmod +x /root/ipvs.sh
 sh /root/ipvs.sh
 lsmod |grep ip_vs
 
-###
+###或者（上下都可以开启ipvs）
 
 cat > /etc/sysconfig/modules/ipvs.modules <<EOF
 #!/bin/bash
