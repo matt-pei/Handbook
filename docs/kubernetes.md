@@ -938,6 +938,7 @@ cat > /opt/kubernetes/pki/kube-proxy-csr.json <<EOF
 }
 EOF
 # 签发证书
+cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client kube-proxy-csr.json | cfssljson -bare kube-porxy
 ```
 #### 7.2.2 拷贝kube-proxy证书到node节点
