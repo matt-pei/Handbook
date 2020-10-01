@@ -812,6 +812,7 @@ kubectl create -f k8s-node.yaml
 ```
 
 #### 7.1.5 创建kubelet.kubeconfig文件
+> 🚨警告：修改`server`参数API-server地址
 ```
 cat > /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig <<EOF
 apiVersion: v1
