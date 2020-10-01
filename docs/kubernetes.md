@@ -9,7 +9,7 @@
 
 - 单master集群
 
-<img alt="k8s架构图" src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" width="1000" height="250" />
+<img alt="k8s架构图" src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" width="400" height="250" />
 
 - 多master集群（HA）
 
