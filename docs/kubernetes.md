@@ -13,7 +13,7 @@
 
 - 多master集群（HA）
 
-<img alt="k8s架构图" src="../images/kuernetes/20191008-02.png" width="1000" height="400" />
+<img alt="k8s架构图" src="../images/kuernetes/20191008-02.png" width="400" height="400" />
 
 ## 2、服务器规划
 | 角色 | IP | 组件 |
