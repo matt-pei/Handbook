@@ -526,7 +526,7 @@ cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 ```
 
 #### 6.1.6 创建TLSBootstrapping Token
-> 🚨警告：修改`token.csv文件`内随机升级的token
+> 🚨警告：修改`token.csv文件`内随机生成的token
 ```
 head -c 16 /dev/urandom | od -An -t x | tr -d ' '
  
