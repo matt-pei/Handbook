@@ -889,6 +889,8 @@ EOF
 systemctl daemon-reload
 systemctl restart kubelet
 systemctl enable kubelet
+systemctl status kubelet
+# journalctl -f -u kubelet
 ```
 
 #### 7.1.7 查看node节点信息
