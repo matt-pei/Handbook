@@ -608,6 +608,7 @@ systemctl status kube-apiserver
 - 3、[使用spuervisor启动kube-controller](./supervisor.md)
 
 #### 6.2.1 添加controller配置文件
+> 🚨警告：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段
 ```
 mkdir -pv /etc/kubernetes/kube-controller/
 cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
