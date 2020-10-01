@@ -326,6 +326,7 @@ EOF
 systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
+systemctl status etcd
 ```
 #### 5.3.5 查看etcd集群状态
 ```
