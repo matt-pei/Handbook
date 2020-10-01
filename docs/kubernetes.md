@@ -159,7 +159,7 @@ EOF
 
 ### 5.1 创建etcd证书请求文件
 
-> 实际部署中,请修改"hosts"参数中ip地址(运行etcd的服务,非ip地址段)
+> 🚨警告：请修改`hosts`参数中ip地址(运行etcd的服务,非ip地址段)
 >
 > 否则在启动etcd的时候会报证书相关错误
 
@@ -257,6 +257,7 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 - 1、[使用spuervisor启动etcd](./supervisor.md)
 
 #### 5.3.3 添加etcd配置文件
+> 🚨警告：修改`ETCD_NAME`和`涉及ip`等参数
 ```
 mkdir -pv /etc/kubernetes/etcd/
 mkdir -pv /data/kubernetes/etcd/data/
