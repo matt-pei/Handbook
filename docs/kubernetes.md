@@ -974,7 +974,7 @@ EOF
 chmod +x /root/ipvs.sh
 sh /root/ipvs.sh
 lsmod |grep ip_vs
-yum -y install ipset
+yum -y install ipset ipvsadm
 
 ###或者（上下都可以开启ipvs）
 
