@@ -47,6 +47,9 @@ sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
 # 关闭firewalld服务
 systemctl stop firewalld.service
 systemctl disable firewalld.service
+# 关闭NetworkManager
+systemctl stop NetworkManager
+systemctl disable NetworkManager
 ```
 - 3、安装常用工具
 ```
@@ -768,6 +771,7 @@ cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 }
 EOF
 # 签发kubelet证书
+cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server kubelet-csr.json | cfssljson -bare kubelet
 ```
 
