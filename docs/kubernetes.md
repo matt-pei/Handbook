@@ -854,7 +854,8 @@ EOF
 > 🚨警告：修改每个node节点上`--hostname-override`参数ip地址
 ```
 mkdir -pv /etc/kubernetes/kubelet/
-mkdir -p /data/kubernetes/logs/kubelet
+mkdir -pv /data/kubernetes/logs/kubelet
+# 添加kubelet配置文件
 cat > /etc/kubernetes/kubelet/kubelet.conf <<EOF
 KUBELET_OPTS="--v=2 \\
   --anonymous-auth=false \\
@@ -973,6 +974,7 @@ EOF
 chmod +x /root/ipvs.sh
 sh /root/ipvs.sh
 lsmod |grep ip_vs
+yum -y install ipset
 
 ###或者（上下都可以开启ipvs）
 
