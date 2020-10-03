@@ -18,9 +18,9 @@
 ## 2、服务器规划
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
-| k8s-master | 192.168.10.210 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
-| k8s-node01 | 192.168.10.211 | kubelet kube-proxy docker etcd02 |
-| k8s-node01 | 192.168.10.212 | kubelet kube-proxy docker etcd03 |
+| k8s-master | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
+| k8s-node01 | 192.168.10.223 | kubelet kube-proxy docker etcd02 |
+| k8s-node01 | 192.168.10.224 | kubelet kube-proxy docker etcd03 |
 
 ## 3、系统初始化设置
 - 1、设置主机名
@@ -35,9 +35,9 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
-echo "192.168.10.210   k8s-master" >> /etc/hosts
-echo "192.168.10.211   k8s-node01" >> /etc/hosts
-echo "192.168.10.212   k8s-node02" >> /etc/hosts
+echo "192.168.10.222   k8s-master" >> /etc/hosts
+echo "192.168.10.223   k8s-node01" >> /etc/hosts
+echo "192.168.10.224   k8s-node02" >> /etc/hosts
 ```
 - 2、关闭防火墙
 ```
@@ -74,6 +74,16 @@ EOF
 systemctl enable chronyd
 systemctl start chronyd
 ```
+- 4、配置免密登陆
+```
+# master生成密钥
+ssh-keygen -t rsa
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
+```
+> ssh-keygen -t rsa -P ''
+> 
+> -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
 
 ## 4、自签CA颁发证书
 ### 4.1、安装cfssl工具
@@ -171,11 +181,11 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "192.168.10.210",
-        "192.168.10.211",
-        "192.168.10.212",
-        "192.168.10.213",
-        "192.168.10.214"
+        "192.168.10.221",
+        "192.168.10.222",
+        "192.168.10.223",
+        "192.168.10.224",
+        "192.168.10.225"
     ],
     "key": {
         "algo": "rsa",
@@ -220,18 +230,7 @@ curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.ta
 ```
 
 ### 5.3 配置etcd
-#### 5.3.1 拷贝密钥到node节点
-```
-# master生成密钥
-ssh-keygen -t rsa
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
-```
-> ssh-keygen -t rsa -P ''
-> 
-> -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
-
-#### 5.3.2 拷贝证书到node节点
+#### 5.3.1 拷贝证书到node节点
 ```
 # 3、拷贝证书
 # master
@@ -259,7 +258,7 @@ scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
 > 建议配置system和supervisor两个启动服务配置,保证服务启动可靠性
 - 1、[使用spuervisor启动etcd](./supervisor.md)
 
-#### 5.3.3 添加etcd配置文件
+#### 5.3.2 添加etcd配置文件
 > 🚨警告：修改`ETCD_NAME`和`涉及ip`等参数
 ```
 mkdir -pv /etc/kubernetes/etcd/
@@ -268,13 +267,13 @@ cat > /etc/kubernetes/etcd/etcd.conf <<EOF
 #[Member]
 ETCD_NAME="etcd-01"
 ETCD_DATA_DIR="/data/kubernetes/etcd/data/"
-ETCD_LISTEN_PEER_URLS="https://192.168.10.210:2380"
-ETCD_LISTEN_CLIENT_URLS="https://192.168.10.210:2379"
+ETCD_LISTEN_PEER_URLS="https://192.168.10.222:2380"
+ETCD_LISTEN_CLIENT_URLS="https://192.168.10.222:2379"
 
 #[Clustering]
-ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.10.210:2380"
-ETCD_ADVERTISE_CLIENT_URLS="https://192.168.10.210:2379"
-ETCD_INITIAL_CLUSTER="etcd-01=https://192.168.10.210:2380,etcd-02=https://192.168.10.211:2380,etcd-03=https://192.168.10.212:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.10.222:2380"
+ETCD_ADVERTISE_CLIENT_URLS="https://192.168.10.222:2379"
+ETCD_INITIAL_CLUSTER="etcd-01=https://192.168.10.222:2380,etcd-02=https://192.168.10.223:2380,etcd-03=https://192.168.10.224:2380"
 ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER_STATE="new"
 
@@ -284,7 +283,7 @@ ETCD_CERT_FILE="/opt/src/etcd/pki/etcd.pem"
 ETCD_KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
 EOF
 ```
-#### 5.3.4 创建etcd系统服务
+#### 5.3.3 创建etcd系统服务
 ```
 # EnvironmentFile参数引用etcd配置文件
 # vim /lib/systemd/system/etcd.service
@@ -331,23 +330,23 @@ systemctl restart etcd
 systemctl enable etcd
 systemctl status etcd
 ```
-#### 5.3.5 查看etcd集群状态
+#### 5.3.4 查看etcd集群状态
 ```
 # 创建软链接etcd命令
 ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
 
 # 查看etcd集群健康检查
 etcdctl cluster-health
-member c9b857597f7df17 is healthy: got healthy result from http://127.0.0.1:2379
-member 172b7f8498de02c7 is healthy: got healthy result from http://127.0.0.1:2379
-member bddbddce237db3d0 is healthy: got healthy result from http://127.0.0.1:2379
+member 407d22d9856f0b40 is healthy: got healthy result from http://127.0.0.1:2379
+member 6d918c48ad5995f0 is healthy: got healthy result from http://127.0.0.1:2379
+member c078f2e092d18dab is healthy: got healthy result from http://127.0.0.1:2379
 cluster is healthy
 
 # 查看etcd集群在线状态
 etcdctl member list
-c9b857597f7df17: name=etcd-02 peerURLs=https://192.168.10.211:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.211:2379 isLeader=false
-172b7f8498de02c7: name=etcd-01 peerURLs=https://192.168.10.210:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.210:2379 isLeader=true
-bddbddce237db3d0: name=etcd-03 peerURLs=https://192.168.10.212:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.212:2379 isLeader=false
+407d22d9856f0b40: name=etcd-01 peerURLs=https://192.168.10.222:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.222:2379 isLeader=true
+6d918c48ad5995f0: name=etcd-02 peerURLs=https://192.168.10.223:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.223:2379 isLeader=false
+c078f2e092d18dab: name=etcd-03 peerURLs=https://192.168.10.224:2380 clientURLs=http://127.0.0.1:2379,https://192.168.10.224:2379 isLeader=false
 ```
 
 ## 6、安装Master节点组件
@@ -379,11 +378,11 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
     "CN": "k8s-node",
     "hosts": [
-        "192.168.10.210",
-        "192.168.10.211",
-        "192.168.10.212",
-        "192.168.10.213",
-        "192.168.10.214"
+        "192.168.10.221",
+        "192.168.10.222",
+        "192.168.10.223",
+        "192.168.10.224",
+        "192.168.10.225"
     ],
     "key": {
         "algo": "rsa",
@@ -401,6 +400,7 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
 }
 EOF
 # 签发client证书
+cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 ```
 #### 6.1.3 签发apiserver（server）证书
@@ -417,11 +417,11 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
         "kubernetes.default.svc",
         "kubernetes.default.svc.cluster",
         "kubernetes.default.svc.cluster.local",
-        "192.168.10.210",
-        "192.168.10.211",
-        "192.168.10.212",
-        "192.168.10.213",
-        "192.168.10.214"
+        "192.168.10.221",
+        "192.168.10.222",
+        "192.168.10.223",
+        "192.168.10.224",
+        "192.168.10.225"
     ],
     "key": {
         "algo": "rsa",
@@ -554,7 +554,7 @@ cat > /etc/kubernetes/kube-apiserver/kube-apiserver.conf <<EOF
 KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --v=2 \\
   --enable-admission-plugins NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota \\
-  --bind-address 192.168.10.210 \\
+  --bind-address 192.168.10.222 \\
   --authorization-mode RBAC,Node \\
   --enable-bootstrap-token-auth true \\
   --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
@@ -565,7 +565,7 @@ KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --etcd-cafile /opt/src/kubernetes/server/bin/pki/ca.pem \\
   --etcd-certfile /opt/src/kubernetes/server/bin/pki/client.pem \\
   --etcd-keyfile /opt/src/kubernetes/server/bin/pki/client-key.pem \\
-  --etcd-servers https://192.168.10.210:2379,https://192.168.10.211:2379,https://192.168.10.212:2379 \\
+  --etcd-servers https://192.168.10.222:2379,https://192.168.10.223:2379,https://192.168.10.224:2379 \\
   --service-cluster-ip-range 10.0.0.0/24 \\
   --service-node-port-range 3000-29999 \\
   --service-account-key-file /opt/src/kubernetes/server/bin/pki/ca-key.pem \\
@@ -607,6 +607,8 @@ systemctl daemon-reload
 systemctl restart kube-apiserver
 systemctl enable kube-apiserver
 systemctl status kube-apiserver
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u kube-apiserver.service
 ```
 
 ### 6.2 部署kube-controller-manager
@@ -656,6 +658,8 @@ systemctl daemon-reload
 systemctl restart kube-controller
 systemctl enable kube-controller
 systemctl status kube-controller
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u kube-controller.service
 ```
 
 ### 6.3 部署kube-scheduler
@@ -698,6 +702,8 @@ systemctl daemon-reload
 systemctl restart kube-scheduler
 systemctl enable kube-scheduler
 systemctl status kube-scheduler
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u kube-scheduler.service
 ```
 #### 6.3.4 创建kubectl软链接和检查集群状态
 ```
@@ -749,11 +755,11 @@ cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
     "CN": "k8s-kubelet",
     "hosts": [
-        "192.168.10.210",
-        "192.168.10.211",
-        "192.168.10.212",
-        "192.168.10.213",
-        "192.168.10.214"
+        "192.168.10.221",
+        "192.168.10.222",
+        "192.168.10.223",
+        "192.168.10.224",
+        "192.168.10.225"
     ],
     "key": {
         "algo": "rsa",
@@ -830,7 +836,7 @@ clusters:
 - cluster:
     certificate-authority-data: 
     certificate-authority: /opt/src/kubernetes-node/node/bin/pki/ca.pem
-    server: https://192.168.10.213:6443
+    server: https://192.168.10.222:6443
   name: default-cluster
 contexts:
 - context:
@@ -901,16 +907,17 @@ systemctl daemon-reload
 systemctl restart kubelet
 systemctl enable kubelet
 systemctl status kubelet
-# journalctl -f -u kubelet
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u kubelet
 ```
 
 #### 7.1.7 查看node节点信息
 ```
 # 检查所有节点并给节点打上标签
 kubectl get node
-NAME         STATUS   ROLES    AGE    VERSION
-k8s-node01   Ready    <none>   9m4s   v1.18.8
-k8s-node02   Ready    <none>   27s    v1.18.8
+NAME         STATUS   ROLES    AGE   VERSION
+k8s-node01   Ready    <none>   53s   v1.18.8
+k8s-node02   Ready    <none>   34s   v1.18.8
 ```
 ```
 # 给节点打标签
@@ -944,17 +951,17 @@ cat > /opt/kubernetes/pki/kube-proxy-csr.json <<EOF
 EOF
 # 签发证书
 cd /opt/kubernetes/pki/
-cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client kube-proxy-csr.json | cfssljson -bare kube-porxy
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client kube-proxy-csr.json | cfssljson -bare kube-proxy
 ```
 #### 7.2.2 拷贝kube-proxy证书到node节点
-> 拷贝kube-porxy证书到node节点
+> 拷贝kube-proxy证书到node节点
 ```
 # node01
-scp /opt/kubernetes/pki/kube-porxy.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
-scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/kube-proxy.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/kube-proxy-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
 # node02
-scp /opt/kubernetes/pki/kube-porxy.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
-scp /opt/kubernetes/pki/kube-porxy-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/kube-proxy.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/kube-proxy-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
 ```
 #### 7.2.3 配置ipvs
 ```
@@ -1000,7 +1007,7 @@ apiVersion: v1
 clusters:
 - cluster:
     certificate-authority: /opt/src/kubernetes-node/node/bin/pki/ca.pem
-    server: https://192.168.10.213:6443
+    server: https://192.168.10.222:6443
   name: default-cluster
 contexts:
 - context:
@@ -1013,8 +1020,8 @@ preferences: {}
 users:
 - name: kube-proxy
   user:
-    client-certificate: /opt/src/kubernetes-node/node/bin/pki/kube-porxy.pem
-    client-key: /opt/src/kubernetes-node/node/bin/pki/kube-porxy-key.pem
+    client-certificate: /opt/src/kubernetes-node/node/bin/pki/kube-proxy.pem
+    client-key: /opt/src/kubernetes-node/node/bin/pki/kube-proxy-key.pem
 EOF
 ```
 #### 7.2.5 创建kube-proxy配置文件
@@ -1022,14 +1029,14 @@ EOF
 >
 > 🚨警告：修改`--hostname-override`参数主机名
 ```
-mkdir -pv /etc/kubernetes/kube-proxy/logs
+mkdir -pv /data/kubernetes/logs/kubeproxy/
 cat > /etc/kubernetes/kube-proxy/kube-proxy.conf <<EOF
 KUBE_PROXY_OPTS="--v=2 \\
   --cluster-cidr 172.16.0.0/16 \\
   --hostname-override k8s-node01 \\
   --proxy-mode=ipvs \\
   --ipvs-scheduler=nq \\
-  --log-dir=/etc/kubernetes/kube-proxy/logs \\
+  --log-dir=/data/kubernetes/logs/kubeproxy \\
   --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig"
 EOF
 ```
@@ -1056,6 +1063,8 @@ systemctl daemon-reload
 systemctl restart kube-proxy
 systemctl enable kube-proxy
 systemctl status kube-proxy
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u kube-proxy.service
 ```
 
 
