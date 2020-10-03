@@ -730,9 +730,9 @@ kubectl get cs -o yaml
 - [安装docker环境](../docs/docker.md)
 - [拉取kubelet启动是所需镜像pause](#71-部署kubelet)
 ```
-docker pull registry.cn-beijing.aliyuncs.com/dotpod/pause:3.1	
-docker tag registry.cn-beijing.aliyuncs.com/dotpod/pause:3.1 k8s.gcr.io/pause:3.1
-docker rmi registry.cn-beijing.aliyuncs.com/dotpod/pause:3.1
+docker pull registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
+docker tag registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1 k8s.gcr.io/pause:3.1
+docker rmi registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
 ```
 
 #### 7.1.1 下载node安装包
