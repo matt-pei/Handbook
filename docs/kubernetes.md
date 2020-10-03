@@ -329,6 +329,8 @@ systemctl daemon-reload
 systemctl restart etcd
 systemctl enable etcd
 systemctl status etcd
+# 查看日志输出（没有报错就说明启动成功）
+journalctl -f -u etcd
 ```
 #### 5.3.4 查看etcd集群状态
 ```
