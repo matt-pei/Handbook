@@ -968,6 +968,9 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=clie
 #### 7.2.2 拷贝kube-proxy证书到node节点
 > 拷贝kube-proxy证书到node节点
 ```
+# master
+cp /opt/kubernetes/pki/kube-proxy.pem /opt/src/kubernetes-node/node/bin/pki
+cp /opt/kubernetes/pki/kube-proxy-key.pem /opt/src/kubernetes-node/node/bin/pki
 # node01
 scp /opt/kubernetes/pki/kube-proxy.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
 scp /opt/kubernetes/pki/kube-proxy-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
@@ -1041,6 +1044,7 @@ EOF
 >
 > 🚨警告：修改`--hostname-override`参数主机名
 ```
+mkdir -pv /etc/kubernetes/kube-proxy
 mkdir -pv /data/kubernetes/logs/kubeproxy/
 cat > /etc/kubernetes/kube-proxy/kube-proxy.conf <<EOF
 KUBE_PROXY_OPTS="--v=2 \\
