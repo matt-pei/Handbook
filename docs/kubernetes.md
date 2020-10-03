@@ -520,7 +520,7 @@ EOF
 #### 6.1.5 拷贝apiserver相关证书
 ```
 # 拷贝证书
-mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
+mkdir -pv /opt/src/kubernetes/server/bin/{pki,conf}
 cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/ca-key.pem /opt/src/kubernetes/server/bin/pki/
 cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes/server/bin/pki/
@@ -532,9 +532,10 @@ cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
 #### 6.1.6 创建TLSBootstrapping Token
 > 🚨警告：修改`token.csv文件`内随机生成的token
 ```
+mkdir -pv /etc/kubernetes/kube-apiserver/
 head -c 16 /dev/urandom | od -An -t x | tr -d ' '
  
-cat > /opt/src/kubernetes/server/bin/conf/token.csv <<EOF
+cat > /etc/kubernetes/kube-apiserver/token.csv <<EOF
 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
 EOF
 ```
@@ -557,7 +558,7 @@ KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --bind-address 192.168.10.222 \\
   --authorization-mode RBAC,Node \\
   --enable-bootstrap-token-auth true \\
-  --token-auth-file /opt/src/kubernetes/server/bin/conf/token.csv \\
+  --token-auth-file /etc/kubernetes/kube-apiserver/token.csv \\
   --tls-cert-file /opt/src/kubernetes/server/bin/pki/apiserver.pem \\
   --tls-private-key-file /opt/src/kubernetes/server/bin/pki/apiserver-key.pem \\
   --requestheader-client-ca-file /opt/src/kubernetes/server/bin/pki/ca.pem \\
@@ -615,8 +616,8 @@ journalctl -f -u kube-apiserver.service
 
 - 3、[使用spuervisor启动kube-controller](./supervisor.md)
 
-#### 6.2.1 添加controller配置文件
-> 🚨警告：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段
+#### 6.2.1 添加配置文件
+> 🚨警告：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段。
 >
 > 🚨警告：修改`--service-cluster-ip-range`参数,同apiserver配置一样
 ```
@@ -739,8 +740,9 @@ docker rmi registry.cn-beijing.aliyuncs.com/dotpod/pause:3.1
 # 下载kubernetes-node v18.9
 curl -L https://dl.k8s.io/v1.18.8/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz 
 
-tar zxf /opt/src/kubernetes-node-linux-amd64.tar.gz -C /opt/src/
-mv /opt/src/kubernetes /opt/src/kubernetes-node-v1.18.8
+mkdir -pv /opt/src/kubernetes-node-v1.18.8
+tar zxf /opt/src/kubernetes-node-linux-amd64.tar.gz -C /opt/src/kubernetes-node-v1.18.8
+mv /opt/src/kubernetes-node-v1.18.8/kubernetes/* /opt/src/kubernetes-node-v1.18.8/
 ln -s /opt/src/kubernetes-node-v1.18.8/ /opt/src/kubernetes-node
 # 创建目录
 mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
@@ -784,6 +786,12 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 #### 7.1.3 拷贝kubelet证书到node节点
 - 从CA拷贝证书到各个node节点上证书目录下
 ```
+#master
+cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/client-key.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/kubelet.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/kubelet-key.pem /opt/src/kubernetes-node/node/bin/pki/
 # node01
 scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
 scp /opt/kubernetes/pki/client.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
@@ -858,6 +866,8 @@ EOF
 - 5、[使用supervisor启动kubelet](./supervisor.md)
 #### 7.1.6 添加kubelet配置文件
 > 🚨警告：修改每个node节点上`--hostname-override`参数ip地址
+>
+> 🚨警告：修改`--cluster-dns`为一个具体Ip,一定要对应apiserver`service-cluster-ip-range`和controller-manager`service-cluster-ip-range`等配置参数网段
 ```
 mkdir -pv /etc/kubernetes/kubelet/
 mkdir -pv /data/kubernetes/logs/kubelet
@@ -866,7 +876,7 @@ cat > /etc/kubernetes/kubelet/kubelet.conf <<EOF
 KUBELET_OPTS="--v=2 \\
   --anonymous-auth=false \\
   --cgroup-driver systemd \\
-  --cluster-dns 192.168.0.2 \\
+  --cluster-dns 10.0.0.1 \\
   --cluster-domain cluster.local \\
   --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \\
   --fail-swap-on=false \\
@@ -1025,7 +1035,7 @@ users:
 EOF
 ```
 #### 7.2.5 创建kube-proxy配置文件
-> 🚨警告：修改`--cluster-cidr`参数ip地址段,此ip段为pod的ip地址段
+> 🚨警告：修改`--cluster-cidr`参数,此ip段为pod的ip地址网段.和controller`cluster-cidr`参数一致
 >
 > 🚨警告：修改`--hostname-override`参数主机名
 ```
