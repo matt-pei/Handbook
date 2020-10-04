@@ -4,8 +4,6 @@
 - 单台master节点
 <img src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" width="800" height="300">
 
-- 多master节点（HA）
-<img src="../images/kuernetes/20191008-01.png" width="800" height="400">
 
 ## 📖 Catalogue
 - 1、[二进制部署](kubernetes.md)
