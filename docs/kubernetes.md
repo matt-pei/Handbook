@@ -1,6 +1,6 @@
-# 部署Kubernetes集群
+# ⚙️ Deploy the Kubernetes cluster
 
-<img alt="kubernetes logo" src="../images/kuernetes/name_blue.png" />
+<img alt="kubernetes logo" src="../images/logo.png" width="100">
 
 ---
 
@@ -18,7 +18,7 @@
 ## 2、服务器规划
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
-| k8s-master | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
+| k8s-main | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
 | k8s-node01 | 192.168.10.223 | kubelet kube-proxy docker etcd02 |
 | k8s-node01 | 192.168.10.224 | kubelet kube-proxy docker etcd03 |
 
@@ -26,7 +26,7 @@
 - 1、设置主机名
 ```
 # 警告：请分别设置对应的主机名
-hostnamectl set-hostname --static k8s-master && bash
+hostnamectl set-hostname --static k8s-main && bash
 hostnamectl set-hostname --static k8s-node01 && bash
 hostnamectl set-hostname --static k8s-node02 && bash
 
@@ -35,7 +35,7 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
-echo "192.168.10.222   k8s-master" >> /etc/hosts
+echo "192.168.10.222   k8s-main" >> /etc/hosts
 echo "192.168.10.223   k8s-node01" >> /etc/hosts
 echo "192.168.10.224   k8s-node02" >> /etc/hosts
 ```
@@ -788,7 +788,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 #### 7.1.3 拷贝kubelet证书到node节点
 - 从CA拷贝证书到各个node节点上证书目录下
 ```
-#master
+# master
 cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes-node/node/bin/pki/
 cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes-node/node/bin/pki/
 cp /opt/kubernetes/pki/client-key.pem /opt/src/kubernetes-node/node/bin/pki/
