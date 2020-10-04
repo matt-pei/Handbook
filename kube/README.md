@@ -2,7 +2,7 @@
 
 ## kubernetes平台架构
 - 单台master节点
-<img src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" width="1000">
+<img src="../images/kuernetes/eb67ab07dc1340bba5c654612791477c.jpeg" width="900">
 
 - 多master节点（HA）
 <img src="../images/kuernetes/20191008-01.png" width="1000" height="350">
