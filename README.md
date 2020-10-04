@@ -1,18 +1,8 @@
-# Personal Reference document
+# 👤 Personal documents
 
-#### Quick links
-
-Harbor: https://goharbor.io/docs/2.0.0/
-
-Docker Hub: https://hub.docker.com/
-
-Kubernetes: https://kubernetes.io/docs/home/
-
-Prometheus: https://prometheus.io/docs/introduction/overview/
-
-
-## Catalogue
-1. [Docker document](docs/docker/README.md)
+## 📖 Catalogue
+1. [Kubernetes docs](docs/kubernetes.md)
 2. [Harbor document](docs/harbor/harbor.md)
 3. [Prometheus docs](docs/prometheus/introduce.md)
-4. [Kubernetes docs](docs/kubernetes.md)
+4. [Docker document](docs/docker/README.md)
+
