@@ -27,12 +27,6 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
-cat >> /etc/hosts <<EOF
-192.168.10.222   k8s-master
-192.168.10.223   k8s-node01
-192.168.10.224   k8s-node02
-EOF
-# 或者
 echo "192.168.10.222   k8s-master" >> /etc/hosts
 echo "192.168.10.223   k8s-node01" >> /etc/hosts
 echo "192.168.10.224   k8s-node02" >> /etc/hosts
@@ -82,6 +76,12 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
 > ssh-keygen -t rsa -P ''
 > 
 > -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
+
+```
+sed -i 's/^#ClientAliveInterval 0/ClientAliveInterval 30/' /etc/ssh/sshd_config
+sed -i 's/^#ClientAliveCountMax 3/ClientAliveCountMax 86400/' /etc/ssh/sshd_config
+systemctl restart sshd
+```
 
 ## 3、自签CA颁发证书
 ### 3.1、安装cfssl工具
