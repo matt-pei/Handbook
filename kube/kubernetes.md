@@ -8,7 +8,7 @@
 ## 1、服务器规划
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
-| k8s-main | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
+| k8s-master | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
 | k8s-node01 | 192.168.10.223 | kubelet kube-proxy docker etcd02 |
 | k8s-node01 | 192.168.10.224 | kubelet kube-proxy docker etcd03 |
 
@@ -16,7 +16,7 @@
 - 1、设置主机名
 ```
 # master
-hostnamectl set-hostname --static k8s-main && bash
+hostnamectl set-hostname --static k8s-master && bash
 # node01
 hostnamectl set-hostname --static k8s-node01 && bash
 # node02
@@ -28,12 +28,12 @@ hostnamectl status
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
 cat >> /etc/hosts <<EOF
-192.168.10.222   k8s-main
+192.168.10.222   k8s-master
 192.168.10.223   k8s-node01
 192.168.10.224   k8s-node02
 EOF
 # 或者
-echo "192.168.10.222   k8s-main" >> /etc/hosts
+echo "192.168.10.222   k8s-master" >> /etc/hosts
 echo "192.168.10.223   k8s-node01" >> /etc/hosts
 echo "192.168.10.224   k8s-node02" >> /etc/hosts
 ```
