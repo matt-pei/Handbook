@@ -625,6 +625,7 @@ mkdir -pv /etc/kubernetes/kube-controller/
 cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
 KUBE_CONTROLLER_MANAGER_OPTS="--leader-elect true \\
   --address=127.0.0.1 \\
+  --allocate-node-cidrs=true \\
   --cluster-cidr 172.16.0.0/16 \\
   --master http://127.0.0.1:8080 \\
   --log-dir /data/kubernetes/logs/kube-controller-manager \\
