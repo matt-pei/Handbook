@@ -232,9 +232,9 @@ curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.ta
 ```
 # 3、拷贝证书
 # master
-cp /opt/kubernetes/pki/ca.pem /opt/src/etcd/pki/
-cp /opt/kubernetes/pki/etcd.pem /opt/src/etcd/pki/
-cp /opt/kubernetes/pki/etcd-key.pem /opt/src/etcd/pki/
+yes|cp /opt/kubernetes/pki/ca.pem /opt/src/etcd/pki/
+yes|cp /opt/kubernetes/pki/etcd.pem /opt/src/etcd/pki/
+yes|cp /opt/kubernetes/pki/etcd-key.pem /opt/src/etcd/pki/
 # node01
 scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/etcd/pki/
 scp /opt/kubernetes/pki/etcd.pem k8s-node01:/opt/src/etcd/pki/
