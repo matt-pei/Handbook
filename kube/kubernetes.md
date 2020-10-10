@@ -1083,4 +1083,3 @@ systemctl status kube-proxy
 journalctl -f -u kube-proxy.service
 ```
 
-
