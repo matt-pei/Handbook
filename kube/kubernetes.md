@@ -15,9 +15,11 @@
 ## 2、系统初始化设置
 - 1、设置主机名
 ```
-# 警告：请分别设置对应的主机名
+# master
 hostnamectl set-hostname --static k8s-main && bash
+# node01
 hostnamectl set-hostname --static k8s-node01 && bash
+# node02
 hostnamectl set-hostname --static k8s-node02 && bash
 
 # 显示当前主机名设置
@@ -25,6 +27,12 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
+cat >> /etc/hosts <<EOF
+192.168.10.222   k8s-main
+192.168.10.223   k8s-node01
+192.168.10.224   k8s-node02
+EOF
+# 或者
 echo "192.168.10.222   k8s-main" >> /etc/hosts
 echo "192.168.10.223   k8s-node01" >> /etc/hosts
 echo "192.168.10.224   k8s-node02" >> /etc/hosts
@@ -78,7 +86,7 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
 ## 3、自签CA颁发证书
 ### 3.1、安装cfssl工具
 ```
-mkdir -p /opt/kubernetes/pki
+mkdir -pv /opt/kubernetes/pki
 cd /opt/kubernetes/pki
 curl -L https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -o /usr/bin/cfssl
 curl -L https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -o /usr/bin/cfssljson
@@ -870,7 +878,8 @@ KUBELET_OPTS="--v=2 \\
   --cgroup-driver systemd \\
   --cluster-dns 10.0.0.1 \\
   --cluster-domain cluster.local \\
-  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \\
+  --runtime-cgroups=/systemd/system.slice \\
+  --kubelet-cgroups=/systemd/system.slice \\
   --fail-swap-on=false \\
   --client-ca-file /opt/src/kubernetes-node/node/bin/pki/ca.pem \\
   --tls-cert-file /opt/src/kubernetes-node/node/bin/pki/kubelet.pem \\
