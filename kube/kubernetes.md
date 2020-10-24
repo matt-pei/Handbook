@@ -46,7 +46,7 @@ systemctl disable NetworkManager
 - 3、安装常用工具
 ```
 yum -y install vim wget net-tools htop pciutils epel-release tcpdump iptraf
-yum -y install bash-completion chrony lrzsz iotop sysstat bind-utils
+yum -y install bash-completion chrony iotop sysstat bind-utils iptables-services
 # 配置时间服务
 cat > /etc/chrony.conf <<EOF
 server ntp.aliyun.com iburst
@@ -165,14 +165,12 @@ EOF
 ```
 
 ## 4、部署etcd集群
- 
-> 首先创建etcd的请求文件,此请求文件是在`CA`机器上创建
+
+> 在Master机器或单独一台机器用于签发证书
 
 ### 4.1 创建etcd证书请求文件
 
-> 🚨警告：请修改`hosts`参数中ip地址(运行etcd的服务,非ip地址段)
->
-> 否则在启动etcd的时候会报证书相关错误
+> 😡警告：修改`hosts`参数列表中etcd的ip地址（奇数个）
 
 ```
 cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
@@ -204,9 +202,9 @@ EOF
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
 ```
 
+### 4.2 下载etcd安装包
 > etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
 
-### 4.2 下载etcd安装包
 - 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
   - [默认使用github下载](https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz)
 ```
@@ -218,10 +216,12 @@ mv /opt/src/etcd-v3.3.25-linux-amd64 /opt/src/etcd-v3.3.25
 # 为etcd做软链接,方便更新升级
 ln -s /opt/src/etcd-v3.3.25 /opt/src/etcd
 # 创建存放etcd证书目录
-mkdir -p /opt/src/etcd/{pki,logs}
+mkdir -pv /etc/kubernetes/pki
 ```
-#### 4.2.1 华为源加速下载
+
 ```
+# 华为源etcd
+
 curl -L https://mirrors.huaweicloud.com/etcd/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
 curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.tar.gz -o /opt/src/etcd-v3.2.31-linux-amd64.tar.gz
@@ -232,17 +232,17 @@ curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.ta
 ```
 # 3、拷贝证书
 # master
-yes|cp /opt/kubernetes/pki/ca.pem /opt/src/etcd/pki/
-yes|cp /opt/kubernetes/pki/etcd.pem /opt/src/etcd/pki/
-yes|cp /opt/kubernetes/pki/etcd-key.pem /opt/src/etcd/pki/
+yes|cp /opt/kubernetes/pki/ca.pem /etc/kubernetes/pki
+yes|cp /opt/kubernetes/pki/etcd.pem /etc/kubernetes/pki
+yes|cp /opt/kubernetes/pki/etcd-key.pem /etc/kubernetes/pki
 # node01
-scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/etcd/pki/
-scp /opt/kubernetes/pki/etcd.pem k8s-node01:/opt/src/etcd/pki/
-scp /opt/kubernetes/pki/etcd-key.pem k8s-node01:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/ca.pem k8s-node01:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/etcd.pem k8s-node01:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/etcd-key.pem k8s-node01:/etc/kubernetes/pki
 # node02
-scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/etcd/pki/
-scp /opt/kubernetes/pki/etcd.pem k8s-node02:/opt/src/etcd/pki/
-scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/opt/src/etcd/pki/
+scp /opt/kubernetes/pki/ca.pem k8s-node02:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/etcd.pem k8s-node02:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/etc/kubernetes/pki
 ```
 
 > 🚨警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
@@ -276,9 +276,9 @@ ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER_STATE="new"
 
 #[Certs]
-CA_FILE="/opt/src/etcd/pki/ca.pem"
-ETCD_CERT_FILE="/opt/src/etcd/pki/etcd.pem"
-ETCD_KEY_FILE="/opt/src/etcd/pki/etcd-key.pem"
+CA_FILE="/etc/kubernetes/pki/ca.pem"
+ETCD_CERT_FILE="/etc/kubernetes/pki/etcd.pem"
+ETCD_KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
 EOF
 ```
 #### 4.3.3 创建etcd系统服务
@@ -303,12 +303,12 @@ ExecStart=/opt/src/etcd/etcd --name=${ETCD_NAME} \
   --advertise-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
   --initial-cluster=${ETCD_INITIAL_CLUSTER} \
   --initial-advertise-peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} \
-  --ca-file=/opt/src/etcd/pki/ca.pem \
-  --cert-file=/opt/src/etcd/pki/etcd.pem \
-  --key-file=/opt/src/etcd/pki/etcd-key.pem \
-  --client-cert-auth   --trusted-ca-file=/opt/src/etcd/pki/ca.pem \
-  --peer-ca-file=/opt/src/etcd/pki/ca.pem \
-  --peer-cert-file=/opt/src/etcd/pki/etcd.pem \
+  --ca-file=/etc/kubernetes/pki/ca.pem \
+  --cert-file=/etc/kubernetes/pki/etcd.pem \
+  --key-file=/etc/kubernetes/pki/etcd-key.pem \
+  --client-cert-auth   --trusted-ca-file=/etc/kubernetes/pki/ca.pem \
+  --peer-ca-file=/etc/kubernetes/pki/ca.pem \
+  --peer-cert-file=/etc/kubernetes/pki/etcd.pem \
   --peer-key-file=${ETCD_KEY_FILE} \
   --peer-client-cert-auth \
   --peer-trusted-ca-file=${CA_FILE} \
