@@ -244,15 +244,6 @@ scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node01:/etc/kubernetes/pki
 scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node02:/etc/kubernetes/pki
 ```
 
-> 😡 注意：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
-> - --listen-peer-urls
-> - --listen-client-urls
-> - --advertise-client-urls
-> - --initial-advertise-peer-urls
-> 
-> 🤔 [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
->  - 1、[使用spuervisor启动etcd](./supervisor.md)
-
 #### 4.3.2 添加etcd配置文件
 > 😡 注意：修改`ETCD_NAME`参数和`带ip`的参数
 ```
@@ -278,6 +269,15 @@ ETCD_CERT_FILE="/etc/kubernetes/pki/etcd.pem"
 ETCD_KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
 EOF
 ```
+> 😡 注意：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
+> - --listen-peer-urls
+> - --listen-client-urls
+> - --advertise-client-urls
+> - --initial-advertise-peer-urls
+> 
+> 🤔 [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
+>  - 1、[使用spuervisor启动etcd](./supervisor.md)
+
 #### 4.3.3 创建etcd系统服务
 ```
 # EnvironmentFile参数引用etcd配置文件
