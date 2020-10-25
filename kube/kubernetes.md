@@ -8,9 +8,9 @@
 ## 1、服务器规划
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
-| k8s-master | 192.168.10.222 | kube-apiserver kube-controller-manager kube-scheduller etcd01 |
-| k8s-node01 | 192.168.10.223 | kubelet kube-proxy docker etcd02 |
-| k8s-node01 | 192.168.10.224 | kubelet kube-proxy docker etcd03 |
+| k8s-master | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
+| k8s-node01 | 192.168.10.223 | kubelet、kube-proxy、docker、etcd02 |
+| k8s-node01 | 192.168.10.224 | kubelet、kube-proxy、docker、etcd03 |
 
 ## 2、系统初始化设置
 - 1、设置主机名
@@ -27,9 +27,14 @@ hostnamectl status
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
-echo "192.168.10.222   k8s-master" >> /etc/hosts
-echo "192.168.10.223   k8s-node01" >> /etc/hosts
-echo "192.168.10.224   k8s-node02" >> /etc/hosts
+cat >> /etc/hosts <<EOF
+192.168.10.222   k8s-master
+192.168.10.223   k8s-node01
+192.168.10.224   k8s-node02
+# cfssl
+104.16.234.19   pkg.cfssl.org
+104.16.235.19   pkg.cfssl.org
+EOF 
 ```
 - 2、关闭防火墙
 ```
@@ -43,11 +48,22 @@ systemctl disable firewalld.service
 systemctl stop NetworkManager
 systemctl disable NetworkManager
 ```
-- 3、安装常用工具
+- 3、配置免密登陆
 ```
-yum -y install vim wget net-tools htop pciutils epel-release tcpdump iptraf
-yum -y install bash-completion chrony iotop sysstat bind-utils iptables-services
-# 配置时间服务
+# master生成密钥
+ssh-keygen -t rsa
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
+ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
+```
+> ssh-keygen -t rsa -P ''
+> 
+> -P就表示空密码，就只需输入一次回撤。不用-P参数，就需要输入三次回车。
+
+- 4、安装常用工具
+```
+yum -y install vim wget iotop htop pciutils tcpdump sysstat epel-release
+yum -y install chrony net-tools bash-completion bind-utils iptables-services
+# 修改chrony配置文件
 cat > /etc/chrony.conf <<EOF
 server ntp.aliyun.com iburst
 stratumweight 0
@@ -66,21 +82,10 @@ EOF
 systemctl enable chronyd
 systemctl start chronyd
 ```
-- 4、配置免密登陆
-```
-# master生成密钥
-ssh-keygen -t rsa
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
-```
-> ssh-keygen -t rsa -P ''
-> 
-> -P表示密码，-P就表示空密码，也可以不用-P参数，这样就需要输入三次回车，用-P就输入一次回车。
-
 ```
 sed -i 's/^#ClientAliveInterval 0/ClientAliveInterval 30/' /etc/ssh/sshd_config
 sed -i 's/^#ClientAliveCountMax 3/ClientAliveCountMax 86400/' /etc/ssh/sshd_config
-systemctl restart sshd
+systemctl restart sshd && reboot
 ```
 
 ## 3、自签CA颁发证书
@@ -121,9 +126,10 @@ cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 }
 EOF
 # 生成CA证书和私钥
+cd /opt/kubernetes/pki/
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ```
-#### 3.2.2 创建基于根证书的config配置文件
+#### 3.2.2 创建根证书的config配置文件
 
 ```
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
@@ -166,11 +172,9 @@ EOF
 
 ## 4、部署etcd集群
 
-> 在Master机器或单独一台机器用于签发证书
-
 ### 4.1 创建etcd证书请求文件
 
-> 😡警告：修改`hosts`参数列表中etcd的ip地址（奇数个）
+> 😡 注意：修改`hosts`参数列表中etcd的ip地址
 
 ```
 cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
@@ -199,16 +203,15 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 }
 EOF
 # 签发etcd证书
+cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
 ```
 
 ### 4.2 下载etcd安装包
-> etcd采用集群模式(3台),所以分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
+> etcd采用集群模式(3台),分别在`master(etcd-01)` `node01(etcd-02)` `node02(etcd-03)`安装部署
 
-- 实际规划etcd集群至少为3台机器,集群方式下在所有机器上执行操作
-  - [默认使用github下载](https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz)
 ```
-mkdir -p /opt/src/
+mkdir -pv /opt/src/
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.3.25/etcd-v3.3.25-linux-amd64.tar.gz -o /opt/src/etcd-v3.3.25-linux-amd64.tar.gz
 
 tar zxf /opt/src/etcd-v3.3.25-linux-amd64.tar.gz -C /opt/src/
@@ -232,32 +235,26 @@ curl -L https://mirrors.huaweicloud.com/etcd/v3.2.31/etcd-v3.2.31-linux-amd64.ta
 ```
 # 3、拷贝证书
 # master
-yes|cp /opt/kubernetes/pki/ca.pem /etc/kubernetes/pki
-yes|cp /opt/kubernetes/pki/etcd.pem /etc/kubernetes/pki
-yes|cp /opt/kubernetes/pki/etcd-key.pem /etc/kubernetes/pki
+yes|cp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem /etc/kubernetes/pki
+
 # node01
-scp /opt/kubernetes/pki/ca.pem k8s-node01:/etc/kubernetes/pki
-scp /opt/kubernetes/pki/etcd.pem k8s-node01:/etc/kubernetes/pki
-scp /opt/kubernetes/pki/etcd-key.pem k8s-node01:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node01:/etc/kubernetes/pki
+
 # node02
-scp /opt/kubernetes/pki/ca.pem k8s-node02:/etc/kubernetes/pki
-scp /opt/kubernetes/pki/etcd.pem k8s-node02:/etc/kubernetes/pki
-scp /opt/kubernetes/pki/etcd-key.pem k8s-node02:/etc/kubernetes/pki
+scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node02:/etc/kubernetes/pki
 ```
 
-> 🚨警告：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
-- --listen-peer-urls
-- --listen-client-urls
-- --advertise-client-urls
-- --initial-advertise-peer-urls
-
-> [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略下方 “5.3.3 创建etcd系统服务”
->  
-> 建议配置system和supervisor两个启动服务配置,保证服务启动可靠性
-- 1、[使用spuervisor启动etcd](./supervisor.md)
+> 😡 注意：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
+> - --listen-peer-urls
+> - --listen-client-urls
+> - --advertise-client-urls
+> - --initial-advertise-peer-urls
+> 
+> 🤔 [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
+>  - 1、[使用spuervisor启动etcd](./supervisor.md)
 
 #### 4.3.2 添加etcd配置文件
-> 🚨警告：修改`ETCD_NAME`和`涉及ip`等参数
+> 😡 注意：修改`ETCD_NAME`参数和`带ip`的参数
 ```
 mkdir -pv /etc/kubernetes/etcd/
 mkdir -pv /data/kubernetes/etcd/data/
@@ -284,7 +281,6 @@ EOF
 #### 4.3.3 创建etcd系统服务
 ```
 # EnvironmentFile参数引用etcd配置文件
-# vim /lib/systemd/system/etcd.service
 cat > /lib/systemd/system/etcd.service <<\EOF
 [Unit]
 Description=Etcd Server
@@ -351,15 +347,12 @@ c078f2e092d18dab: name=etcd-03 peerURLs=https://192.168.10.224:2380 clientURLs=h
 
 ## 5、安装Master节点组件
 
-> Mater节点包括：kube-apiserver、kube-controller-manager、kube-scheduler和etcd
+> Mater节点包括：kube-apiserver、kube-controller-manager、kube-scheduler和etcd01
 
 ### 5.1 部署kube-apiserver
 #### 5.1.1 下载kubernetes安装包
 ```
 # 下载kubernetes二进制包
-# wget -c -P /opt/src https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz
-# curl -L https://dl.k8s.io/v1.16.15/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
-
 curl -L https://dl.k8s.io/v1.18.8/kubernetes-server-linux-amd64.tar.gz -o /opt/src/kubernetes-server-linux-amd64.tar.gz
 
 tar zxf /opt/src/kubernetes-server-linux-amd64.tar.gz -C /opt/src/
@@ -369,10 +362,10 @@ ln -s /opt/src/kubernetes-v1.18.8 /opt/src/kubernetes
 rm -rf /opt/src/kubernetes/server/bin/*.tar
 rm -rf /opt/src/kubernetes/server/bin/*_tag
 ```
-#### 5.1.2 签发client证书
+#### 5.1.2 签发client（apiserver）证书
 > 注意：apiserver在与etcd进行通信时，此时apiserver为客户端etcd为服务端，因此需要client证书加密通信。
 >
-> 🚨警告：修改`hosts`参数内ip地址
+> 😡 注意：修改`hosts`参数内ip地址
 ```
 cat > /opt/kubernetes/pki/client-csr.json <<EOF
 {
@@ -399,14 +392,14 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
     ]
 }
 EOF
-# 签发client证书
+# 签发client（apiserver）证书
 cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 ```
 #### 5.1.3 签发apiserver（server）证书
 > 当其他客户端与apiserver进行通信时,也需要TLS认证，此时apiserver为服务端
 >
-> 🚨警告：修改`hosts`参数内ip地址
+> 😡 注意：修改`hosts`参数内ip地址
 ```
 cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
 {
@@ -438,13 +431,15 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     ]
 }
 EOF
-# 签发apiserver证书
+# 签发apiserver（server）证书
+cd /opt/kubernetes/pki/
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server apiserver-csr.json | cfssljson -bare apiserver
 ```
 #### 5.1.4 配置apiserver日志审计
 ```
 # 创建存放证书目录
 mkdir -p /opt/src/kubernetes/server/bin/{pki,conf}
+
 # 配置apiserver日志审计
 cat > /opt/src/kubernetes/server/bin/conf/audit.yaml <<EOF
 apiVersion: audit.k8s.io/v1 # This is required.
@@ -521,16 +516,12 @@ EOF
 ```
 # 拷贝证书
 mkdir -pv /opt/src/kubernetes/server/bin/{pki,conf}
-cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/ca-key.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/client-key.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/apiserver.pem /opt/src/kubernetes/server/bin/pki/
-cp /opt/kubernetes/pki/apiserver-key.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/{ca,ca-key,client,client-key}.pem /opt/src/kubernetes/server/bin/pki/
+cp /opt/kubernetes/pki/{apiserver,apiserver-key}.pem /opt/src/kubernetes/server/bin/pki/
 ```
 
 #### 5.1.6 创建TLSBootstrapping Token
-> 🚨警告：修改`token.csv文件`内随机生成的token
+> 😡 注意：修改`token.csv文件`内随机生成的token
 ```
 mkdir -pv /etc/kubernetes/kube-apiserver/
 head -c 16 /dev/urandom | od -An -t x | tr -d ' '
@@ -539,16 +530,8 @@ cat > /etc/kubernetes/kube-apiserver/token.csv <<EOF
 3f0aac08a0a6d4070c02acd7141bbb1c,kubelet-bootstrap,10001,"system:node-bootstrapper"
 EOF
 ```
-> [可选项] 如使用supervisor启动apiserver服务,请点击跳转“使用supervisor启动apiserver”并忽略下方 “5.1.7 创建apiserver系统服务”
-
-- 2、[使用supervisor启动apiserver](./supervisor.md)
 
 #### 5.1.7 添加apiserver配置文件
-> 🚨警告：修改`--service-cluster-ip-range`参数ip范围，此为集群中service的Ip范围
->
-> 🚨警告：修改`--bind-address`绑定apiserver地址
-> 
-> 🚨警告：修改`--etcd-servers`参数etcd集群地址
 ```
 mkdir -pv /etc/kubernetes/kube-apiserver/
 cat > /etc/kubernetes/kube-apiserver/kube-apiserver.conf <<EOF
@@ -581,6 +564,17 @@ KUBE_APISERVER_OPTS="--apiserver-count 1 \\
   --kubelet-client-key /opt/src/kubernetes/server/bin/pki/client-key.pem"
 EOF
 ```
+> 😡 注意：修改`--service-cluster-ip-range`参数ip范围，此为集群中service的Ip范围
+>
+> 😡 注意：修改`--bind-address`绑定apiserver地址
+> 
+> 😡 注意：修改`--etcd-servers`参数etcd集群地址
+> 
+> 🤔 [可选项] 如使用supervisor启动apiserver服务,请点击跳转“使用supervisor启动apiserver”并忽略 “5.1.8 创建apiserver系统服务”
+>
+> - 2、[使用supervisor启动apiserver](./supervisor.md)
+
+
 #### 5.1.8 创建apiserver系统服务
 ```
 # vim /lib/systemd/system/kube-apiserver.service
@@ -614,12 +608,7 @@ journalctl -f -u kube-apiserver.service
 
 ### 5.2 部署kube-controller-manager
 
-- 3、[使用spuervisor启动kube-controller](./supervisor.md)
-
 #### 5.2.1 添加配置文件
-> 🚨警告：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段。
->
-> 🚨警告：修改`--service-cluster-ip-range`参数,同apiserver配置一样
 ```
 mkdir -pv /etc/kubernetes/kube-controller/
 cat > /etc/kubernetes/kube-controller/kube-controller.conf <<EOF
@@ -635,6 +624,12 @@ KUBE_CONTROLLER_MANAGER_OPTS="--leader-elect true \\
   --v 2"
 EOF
 ```
+> 😡 注意：修改`--cluster-cidr`参数为kubernetes集群内pod地址网段。
+>
+> 😡 注意：修改`--service-cluster-ip-range`参数,同apiserver配置一样
+>
+> 🤔 [可选项] 使用supervisor启动kube-controllerr服务，并忽略“5.2.2 创建controller系统服务”
+> - 3、[使用spuervisor启动kube-controller](./supervisor.md)
 
 #### 5.2.2 创建controller系统服务
 ```
@@ -666,8 +661,6 @@ journalctl -f -u kube-controller.service
 
 ### 5.3 部署kube-scheduler
 
-- 4、[使用spuervisor启动kube-scheduler](./supervisor.md)
-
 #### 5.3.1 添加kube-scheduler配置文件
 ```
 mkdir -pv /etc/kubernetes/kube-scheduler/
@@ -680,6 +673,9 @@ KUBE_SCHEDULER_OPTS="--logtostderr=false \\
 --log-dir=/data/logs/kubernetes/kube-scheduler"
 EOF
 ```
+> 🤔 [可选项] 使用supervisor启动kube-scheduler服务，并忽略“5.3.2 创建kube-scheduler系统服务”
+> - 4、[使用spuervisor启动kube-scheduler](./supervisor.md)
+
 #### 5.3.2 创建kube-scheduler系统服务
 ```
 # vim /lib/systemd/system/kube-scheduler.service
@@ -717,15 +713,12 @@ kubectl get cs -o yaml
 
 
 ## 6、安装Node节点组件
-
-> 注意：node节点上需要安装的组件为：kubelet、kubeproxy和docker
-> 
-> 🔥注意：下面操作需要在所有node节点上执行
-
 ### 6.1 部署kubelet
-> 🔥注意：安装前需要先在CA节点给kubelet签发证书
+> 🤔 注意：node节点上需要安装的组件为：kubelet、kubeproxy和docker
 > 
-> 🔥注意：kubelet服务启动时需要docker环境否则无法启动
+> 🔥 注意：下面操作需要在所有node节点上执行，安装前需要先在CA节点给kubelet签发证书
+> 
+> 🔥 注意：kubelet服务在启动时需要docker环境否则无法启动
 - [安装docker环境](../docs/docker.md)
 - [拉取kubelet启动是所需镜像pause](#71-部署kubelet)
 ```
@@ -734,10 +727,8 @@ docker tag registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1 k8s.gcr.io/pause:3
 docker rmi registry.cn-beijing.aliyuncs.com/zhoujun/pause:3.1
 ```
 
-#### 6.1.1 下载node安装包
+#### 6.1.1 下载kubernetes-node安装包
 ```
-# 下载kubernetes-node
-#curl -L https://dl.k8s.io/v1.16.15/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz
 # 下载kubernetes-node v18.9
 curl -L https://dl.k8s.io/v1.18.8/kubernetes-node-linux-amd64.tar.gz -o /opt/src/kubernetes-node-linux-amd64.tar.gz 
 
@@ -750,9 +741,10 @@ mkdir -p /opt/src/kubernetes-node/node/bin/{pki,conf}
 ```
 
 #### 6.1.2 签发kubelet证书
-> 🔥注意：在CA服务器给kubelet签发证书
-- [在CA服务器上签发证书](#712-签发kubelet证书)
-> 🚨警告：修改`hosts`参数内ip地址
+> 😡 注意：在CA服务器给kubelet签发证书
+> - [在CA服务器上签发证书](#612-签发kubelet证书)
+> 
+> 😡 注意：修改`hosts`参数内ip地址
 ```
 cat > /opt/kubernetes/pki/kubelet-csr.json <<EOF
 {
@@ -788,23 +780,14 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=serv
 - 从CA拷贝证书到各个node节点上证书目录下
 ```
 # master
-cp /opt/kubernetes/pki/ca.pem /opt/src/kubernetes-node/node/bin/pki/
-cp /opt/kubernetes/pki/client.pem /opt/src/kubernetes-node/node/bin/pki/
-cp /opt/kubernetes/pki/client-key.pem /opt/src/kubernetes-node/node/bin/pki/
-cp /opt/kubernetes/pki/kubelet.pem /opt/src/kubernetes-node/node/bin/pki/
-cp /opt/kubernetes/pki/kubelet-key.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/{ca,client,client-key}.pem /opt/src/kubernetes-node/node/bin/pki/
+cp /opt/kubernetes/pki/{kubelet,kubelet-key}.pem /opt/src/kubernetes-node/node/bin/pki/
 # node01
-scp /opt/kubernetes/pki/ca.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/client.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/client-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/kubelet.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/kubelet-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
+scp /opt/kubernetes/pki/{ca.pem,client,client-key} k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
+scp /opt/kubernetes/pki/{kubelet,kubelet-key}.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki/
 # node02
-scp /opt/kubernetes/pki/ca.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/client.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/client-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/kubelet.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
-scp /opt/kubernetes/pki/kubelet-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
+scp /opt/kubernetes/pki/{ca,client,client-key}.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
+scp /opt/kubernetes/pki/{kubelet,kubelet-key}.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki/
 ```
 
 ```
@@ -814,7 +797,7 @@ ln -s /opt/src/kubernetes-node/node/bin/kubectl /usr/local/sbin/
 
 #### 6.1.4 创建k8s-node.yaml配置
 
-> 🔥注意：[此步在master节点执行](#714-创建kubelet配置)
+> 😡 注意：[此步在master节点执行](#714-创建kubelet配置)
 
 ```
 cat > /opt/src/kubernetes/server/bin/conf/k8s-node.yaml <<EOF
@@ -837,7 +820,7 @@ kubectl create -f k8s-node.yaml
 ```
 
 #### 6.1.5 创建kubelet.kubeconfig文件
-> 🚨警告：修改`server`参数,API-Server地址
+> 😡 警告：修改`server`参数,API-Server地址
 ```
 cat > /opt/src/kubernetes-node/node/bin/conf/kubelet.kubeconfig <<EOF
 apiVersion: v1
@@ -863,12 +846,7 @@ users:
     client-key: /opt/src/kubernetes-node/node/bin/pki/client-key.pem
 EOF
 ```
-> [可选项] 如使用supervisor启动kubelet服务,请点击跳转“使用supervisor启动kubelet”并忽略下方6.1.6之后
-- 5、[使用supervisor启动kubelet](./supervisor.md)
 #### 6.1.6 添加kubelet配置文件
-> 🚨警告：修改每个node节点上`--hostname-override`参数ip地址
->
-> 🚨警告：修改`--cluster-dns`为一个具体Ip,一定要对应apiserver`service-cluster-ip-range`和controller-manager`service-cluster-ip-range`等配置参数网段
 ```
 mkdir -pv /etc/kubernetes/kubelet/
 mkdir -pv /data/kubernetes/logs/kubelet
@@ -894,6 +872,12 @@ KUBELET_OPTS="--v=2 \\
   --root-dir /data/kubernetes/logs/kubelet"
 EOF
 ```
+> 😡 注意：修改每个node节点上`--hostname-override`参数ip地址
+>
+> 😡 注意：修改`--cluster-dns`为一个具体Ip,一定要对应apiserver`service-cluster-ip-range`和controller-manager`service-cluster-ip-range`等配置参数网段
+> 
+> 🤔 [可选项] 如使用supervisor启动kubelet服务,请点击跳转“使用supervisor启动kubelet”并忽略 "6.1.7 创建Kubelet系统服务"
+> - 5、[使用supervisor启动kubelet](./supervisor.md)
 #### 6.1.7 创建Kubelet系统服务
 ```
 # vim /lib/systemd/system/kubelet.service
@@ -969,14 +953,11 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=clie
 > 拷贝kube-proxy证书到node节点
 ```
 # master
-cp /opt/kubernetes/pki/kube-proxy.pem /opt/src/kubernetes-node/node/bin/pki
-cp /opt/kubernetes/pki/kube-proxy-key.pem /opt/src/kubernetes-node/node/bin/pki
+cp /opt/kubernetes/pki/{kube-proxy,kube-proxy-key}.pem /opt/src/kubernetes-node/node/bin/pki
 # node01
-scp /opt/kubernetes/pki/kube-proxy.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
-scp /opt/kubernetes/pki/kube-proxy-key.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/{kube-proxy,kube-proxy-key}.pem k8s-node01:/opt/src/kubernetes-node/node/bin/pki
 # node02
-scp /opt/kubernetes/pki/kube-proxy.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
-scp /opt/kubernetes/pki/kube-proxy-key.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
+scp /opt/kubernetes/pki/{kube-proxy,kube-proxy-key}.pem k8s-node02:/opt/src/kubernetes-node/node/bin/pki
 ```
 #### 6.2.3 配置ipvs
 ```
@@ -1040,9 +1021,7 @@ users:
 EOF
 ```
 #### 6.2.5 创建kube-proxy配置文件
-> 🚨警告：修改`--cluster-cidr`参数,此ip段为pod的ip地址网段.和controller`cluster-cidr`参数一致
->
-> 🚨警告：修改`--hostname-override`参数主机名
+
 ```
 mkdir -pv /etc/kubernetes/kube-proxy
 mkdir -pv /data/kubernetes/logs/kubeproxy/
@@ -1056,6 +1035,9 @@ KUBE_PROXY_OPTS="--v=2 \\
   --kubeconfig /opt/src/kubernetes-node/node/bin/conf/kube-proxy.kubeconfig"
 EOF
 ```
+> 😡 注意：修改`--cluster-cidr`参数,此ip段为pod的ip地址网段.和controller`cluster-cidr`参数一致
+>
+> 😡 注意：修改`--hostname-override`参数主机名
 #### 6.2.6 创建kube-proxy系统服务
 ```
 cat > /lib/systemd/system/kube-proxy.service <<\EOF
