@@ -52,8 +52,7 @@ systemctl disable NetworkManager
 ```
 # master生成密钥
 ssh-keygen -t rsa
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node01
-ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
+for host in {k8s-node01,k8s-node02};do ssh-copy-id -i ~/.ssh/id_rsa.pub  root@$host;done
 ```
 > ssh-keygen -t rsa -P ''
 > 
@@ -62,7 +61,7 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub  root@k8s-node02
 - 4、安装常用工具
 ```
 yum -y install vim wget iotop htop pciutils tcpdump sysstat epel-release
-yum -y install chrony net-tools bash-completion bind-utils iptables-services
+yum -y install chrony net-tools bash-completion iptables-services
 # 修改chrony配置文件
 cat > /etc/chrony.conf <<EOF
 server ntp.aliyun.com iburst

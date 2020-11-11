@@ -1,11 +1,19 @@
 #!/bin/bash
-# 阿里云
+master="192.168.10.1"
+node01="192.168.10.2"
+node02="192.168.10.3"
+node03="192.168.10.4"
+node04="192.168.10.5"
+
 # 设置 hostname 解析
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
 echo "192.168.10.228   k8s-main" >> /etc/hosts
 echo "192.168.10.229   k8s-node01" >> /etc/hosts
 echo "192.168.10.230   k8s-node02" >> /etc/hosts
+# cfssl
+echo "104.16.234.19   pkg.cfssl.org" >> /etc/hosts
+echo "104.16.235.19   pkg.cfssl.org" >> /etc/hosts
 
 # 关闭防火墙
 setenforce 0
@@ -20,7 +28,7 @@ systemctl disable NetworkManager
 
 # 安装常用工具
 yum -y install vim wget net-tools htop pciutils epel-release tcpdump iptraf
-yum -y install bash-completion chrony lrzsz iotop sysstat bind-utils
+yum -y install bash-completion chrony iotop sysstat bind-utils iptables-services
 # 配置时间服务
 cat > /etc/chrony.conf <<EOF
 server ntp.aliyun.com iburst
@@ -123,11 +131,11 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "192.168.10.234",
-        "192.168.10.235",
-        "192.168.10.236",
-        "192.168.10.237",
-        "192.168.10.238"
+        "${master}",
+        "${node01}",
+        "${node02}",
+        "${node03}",
+        "${node04}"
     ],
     "key": {
         "algo": "rsa",
