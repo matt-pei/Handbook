@@ -2,12 +2,7 @@
 
 #### 启动prometheus
 ```
-docker run -dit \
-    --restart=always \
-    --name prometheus\
-    -p 9090:9090 \
-    -v /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  \
-    prom/prometheus:v2.18.1
+docker run -dit --restart=always --name prometheus -p 9090:9090 -v /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus:v2.18.1
 ```
 
 #### 启动grafana
