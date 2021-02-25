@@ -2,6 +2,7 @@
 
 import psutil
 
+
 def memissue():
     print("内存信息:")
     mem = psutil.virtual_memory()
@@ -13,7 +14,11 @@ def memissue():
     print("Used: %.3fMB" % memused)
     print("Total: %.3fMB" % memtotal)
     print("Percentage: %.3f" % mempercentage)
-    
+
+
+def cpuissue():
+    print("cpu信息")
+
+
 memissue()
-
-
+cpuissue()
