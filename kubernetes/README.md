@@ -16,7 +16,9 @@
   - 4、[部署node节点组件](kubernetes.md)
     - 1、kubelet部署
     - 2、kube-proxy部署
+  - 5、[快速安装K8s]()
 - [更新中....]()
 - 2、Flannl部署
 - 3、CoreDNS部署
 - 4、Dashboard
+
