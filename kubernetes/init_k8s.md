@@ -35,8 +35,11 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 ```
 
 ## 三、安装docker和kubelet
-- curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.19.5
-- [快速安装](../script/install_kubernetes.sh)
+- [快速安装](../script/install_kubelet.sh)
+
+> export REGISTRY_MIRROR=https://registry.cn-hangzhou.aliyuncs.com
+>
+> curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.19.5
 
 ### 1、设置阿里云docker hub地址
 ```
