@@ -35,7 +35,7 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 ```
 
 ## 三、安装docker和kubele
-
+- curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.19.5
 - [快速安装](../script/install_kubernetes.sh)
 
 ### 1、设置阿里云docker hub地址
