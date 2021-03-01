@@ -27,7 +27,7 @@ lscpu
 ## 二、修改hostname主机名
 ```
 # 修改hostname
-hostname set-hostname --static xxxx
+hostnamectl set-hostname --static xxxx
 
 # hostname立即生效 执行 bash 即可
 # 设置hostname解析
