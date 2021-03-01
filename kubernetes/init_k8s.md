@@ -34,7 +34,7 @@ hostname set-hostname --static xxxx
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 ```
 
-## 三、安装docker和kubele
+## 三、安装docker和kubelet
 - curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.19.5
 - [快速安装](../script/install_kubernetes.sh)
 
