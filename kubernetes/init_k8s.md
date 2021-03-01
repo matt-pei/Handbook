@@ -35,6 +35,8 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 ```
 
 ## 三、安装docker和kubelet
+> 在 master 节点和 worker 节点都要执行
+
 - [快速安装](../script/install_kubelet.sh)
 
 > export REGISTRY_MIRROR=https://registry.cn-hangzhou.aliyuncs.com
