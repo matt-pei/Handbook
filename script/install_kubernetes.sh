@@ -90,7 +90,7 @@ echo "net.ipv6.conf.all.forwarding = 1"  >> /etc/sysctl.conf
 # 执行命令以应用
 sysctl -p
 
-# 配置K8S的yum源
+# 配置K8s的yum源
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -109,6 +109,7 @@ yum remove -y kubelet kubeadm kubectl
 # 将 ${1} 替换为 kubernetes 版本号，例如 1.19.0
 yum install -y kubelet-${1} kubeadm-${1} kubectl-${1}
 
-systemctl enable kubelet && systemctl start kubelet
+systemctl enable kubelet
+systemctl start kubelet
 
 
