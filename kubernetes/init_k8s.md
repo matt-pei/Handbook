@@ -41,7 +41,7 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 
 > export REGISTRY_MIRROR=https://registry.cn-hangzhou.aliyuncs.com
 >
-> curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.19.5
+> curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/install_kubelet.sh | sh -s 1.18.9
 
 ### 1、设置阿里云docker hub地址
 ```
@@ -168,8 +168,8 @@ EOF
 yum remove -y kubelet kubeadm kubectl
 
 # 安装kubelet、kubeadm、kubectl
-# 将 ${1} 替换为 kubernetes 版本号，例如 1.19.0
-yum install -y kubelet-${1} kubeadm-${1} kubectl-${1}
+# 将 ${1} 替换为 kubernetes 版本号，例如 1.18.9
+yum install -y kubelet-1.18.9 kubeadm-1.18.9 kubectl-1.18.9
 
 systemctl enable kubelet
 systemctl start kubelet
@@ -195,7 +195,7 @@ export POD_SUBNET=10.100.0.1/16
 echo "${MASTER_IP}    ${APISERVER_NAME}" >> /etc/hosts
 ```
 - 快速初始化（先完成配置环境变量）
-- curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/init_master.sh | sh -s 1.19.5
+- curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/init_master.sh | sh -s 1.18.9
 
 
 ### 2、判断环境变量
