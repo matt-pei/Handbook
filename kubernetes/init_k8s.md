@@ -292,6 +292,7 @@ echo "${MASTER_IP}    ${APISERVER_NAME}" >> /etc/hosts
 kubeadm join apiserver.demo:6443 --token mpfjma.4vjjg8flqihor4vt     --discovery-token-ca-cert-hash sha256:6f7a8e40a810323672de5eee6f4d19aa2dbdb38411845a1bf5dd63485c43d303
 ```
 
+### 3、查看node节点信息
 ```
 # 在 master 节点执行
 # 查看node节点信息
