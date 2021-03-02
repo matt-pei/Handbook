@@ -256,9 +256,50 @@ kubectl create -f https://kuboard.cn/install-script/v1.20.x/calico-operator.yaml
 wget https://kuboard.cn/install-script/v1.20.x/calico-custom-resources.yaml
 sed -i "s#192.168.0.0/16#${POD_SUBNET}#" calico-custom-resources.yaml
 kubectl create -f calico-custom-resources.yaml
+
+# 查看 master 节点初始化结果
+kubectl get nodes -o wide
 ```
 
 
+## 五、初始化worker节点
+
+### 1、先在master创建token
+```
+# 在master上执行
+kubeadm token create --print-join-command
+```
+> 例如 (执行kubeadm token create的输出)
+>
+> kubeadm join apiserver.demo:6443 --token mpfjma.4vjjg8flqihor4vt     --discovery-token-ca-cert-hash sha256:6f7a8e40a810323672de5eee6f4d19aa2dbdb38411845a1bf5dd63485c43d303
+
+> 注意⚠️
+>
+> 生成的token有效时间为 2 个小时,2小时内可以使用此 token 初始化任意数量的 worker 节点。
+
+
+### 2、初始化worker节点
+- 只在 worker 节点执行
+
+```
+# master节点IP
+export MASTER_IP=x.x.x.x
+# 替换 apiserver.demo 为 您想要的 dnsName
+export APISERVER_NAME=apiserver.demo
+echo "${MASTER_IP}    ${APISERVER_NAME}" >> /etc/hosts
+
+# 加入集群（master上的token输出）
+kubeadm join apiserver.demo:6443 --token mpfjma.4vjjg8flqihor4vt     --discovery-token-ca-cert-hash sha256:6f7a8e40a810323672de5eee6f4d19aa2dbdb38411845a1bf5dd63485c43d303
+```
+
+```
+# 在 master 节点执行
+# 查看node节点信息
+kubectl get nodes -o wide
+
+# 查看node节点信息
+kubectl get nodes
+```
 
 
 
