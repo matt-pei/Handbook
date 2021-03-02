@@ -8,7 +8,7 @@
 ## 安装后软件版本
 - Kubernetes v1.18.x
   - flannel (选择配置)
-  - Calico 3.13.1（选择配置）
+  - Calico 3.17.1（选择配置）
   - Nginx-ingress 1.5.5
 - Docker 19.03.8
 
@@ -174,6 +174,91 @@ yum install -y kubelet-${1} kubeadm-${1} kubectl-${1}
 systemctl enable kubelet
 systemctl start kubelet
 ```
+
+## 四、初始化master节点
+
+> 只在master上执行
+>
+
+- APISERVER_NAME 不能是 master 的 hostname
+- APISERVER_NAME 必须全为小写字母、数字、小数点，不能包含减号
+- POD_SUBNET 所使用的网段不能与 master节点/worker节点 所在的网段重叠。该字段的取值为一个 CIDR 值，如果您对 CIDR 这个概念还不熟悉，请仍然执行 export POD_SUBNET=10.100.0.1/16 命令,不做修改
+
+### 1、配置环境变量
+```
+# master节点IP
+export MASTER_IP=x.x.x.x
+# 替换 apiserver.demo 为 您想要的 dnsName
+export APISERVER_NAME=apiserver.demo
+# Kubernetes容器组所在的网段
+export POD_SUBNET=10.100.0.1/16
+echo "${MASTER_IP}    ${APISERVER_NAME}" >> /etc/hosts
+```
+- 快速初始化（先完成配置环境变量）
+- curl -sSL https://github.com/matt-pei/Handbook/raw/master/script/init_master.sh | sh -s 1.19.5
+
+
+### 2、判断环境变量
+```
+if [ ${#POD_SUBNET} -eq 0 ] || [ ${#APISERVER_NAME} -eq 0 ]; then
+  echo -e "\033[31;1m请确保您已经设置了环境变量 POD_SUBNET 和 APISERVER_NAME \033[0m"
+  echo 当前POD_SUBNET=$POD_SUBNET
+  echo 当前APISERVER_NAME=$APISERVER_NAME
+  exit 1
+fi
+```
+
+> 请将下面第6行的 ${1}替换成需要安装的版本号
+```
+rm -f ./kubeadm-config.yaml
+cat <<EOF > ./kubeadm-config.yaml
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+kubernetesVersion: v${1}
+imageRepository: registry.aliyuncs.com/k8sxio
+controlPlaneEndpoint: "${APISERVER_NAME}:6443"
+networking:
+  serviceSubnet: "10.96.0.0/16"
+  podSubnet: "${POD_SUBNET}"
+  dnsDomain: "cluster.local"
+
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+EOF
+```
+
+```
+# kubeadm init
+echo "抓取镜像，请稍候..."
+kubeadm config images pull --config=kubeadm-config.yaml
+
+echo "初始化 Master 节点"
+kubeadm init --config=kubeadm-config.yaml --upload-certs
+```
+
+```
+# 配置 kubectl
+rm -rf /root/.kube/
+mkdir /root/.kube/
+cp -i /etc/kubernetes/admin.conf /root/.kube/config
+```
+
+```
+# 安装 calico 网络插件
+# 参考文档 https://docs.projectcalico.org/v3.13/getting-started/kubernetes/self-managed-onprem/onpremises
+
+echo "安装calico-3.17.1"
+rm -f calico-3.17.1.yaml
+kubectl create -f https://kuboard.cn/install-script/v1.20.x/calico-operator.yaml
+wget https://kuboard.cn/install-script/v1.20.x/calico-custom-resources.yaml
+sed -i "s#192.168.0.0/16#${POD_SUBNET}#" calico-custom-resources.yaml
+kubectl create -f calico-custom-resources.yaml
+```
+
+
 
 
 
