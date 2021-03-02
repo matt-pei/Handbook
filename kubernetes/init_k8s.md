@@ -273,7 +273,7 @@ kubeadm token create --print-join-command
 >
 > kubeadm join apiserver.demo:6443 --token mpfjma.4vjjg8flqihor4vt     --discovery-token-ca-cert-hash sha256:6f7a8e40a810323672de5eee6f4d19aa2dbdb38411845a1bf5dd63485c43d303
 
-> 注意⚠️
+> ⚠️注意
 >
 > 生成的token有效时间为 2 个小时,2小时内可以使用此 token 初始化任意数量的 worker 节点。
 
