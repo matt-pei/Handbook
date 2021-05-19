@@ -8,9 +8,9 @@ hostnamectl set-hostname --static ceph-03 && bash
 # 
 cat >> /etc/hosts <<EOF
 
-192.168.176.226  ceph-01
-192.168.176.237  ceph-02
-192.168.176.238  ceph-03
+192.168.1.187  ceph-01
+192.168.1.188  ceph-02
+192.168.1.189  ceph-03
 EOF
 ```
 
@@ -36,8 +36,9 @@ systemctl stop firewalld.service
 
 ```
 # 下载阿里epel源
+curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 yum -y install wget vim bash-completion chrony
-wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+#wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 # 启动时间服务器
 cat > /etc/chrony.conf <<EOF
 server ntp.aliyun.com iburst
@@ -64,9 +65,17 @@ chronyc -a makestep
 cat >> /etc/yum.repos.d/ceph.repo <<EOF
 [ceph-noarch]
 name=Ceph noarch packages
-baseurl=https://download.ceph.com/rpm-mimic/el7/noarch
+baseurl=http://mirrors.aliyun.com/ceph/rpm-nautilus/el7/noarch/
 enabled=1
-gpgcheck=1
+gpgcheck=0
+type=rpm-md
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[ceph-x86_64]
+name=Ceph x86_64 packages
+baseurl=http://mirrors.aliyun.com/ceph/rpm-nautilus/el7/x86_64/
+enabled=1
+gpgcheck=0
 type=rpm-md
 gpgkey=https://download.ceph.com/keys/release.asc
 EOF
@@ -79,9 +88,11 @@ yum -y install ceph-deploy python-setuptools
 ### 创建ceph集群
 ```
 # 创建ceph目录
-mkdir -pv /etc/ceph
-ceph-deploy new ceph-01
-ceph-deploy new ceph-01 ceph-02 ceph-03
+mkdir -pv /etc/ceph-deploy && cd /etc/ceph-deploy
+# aliyun环境设置内网段地址
+ceph-deploy new --cluster-network 192.168.1.0/24 ceph-01
+# ceph-deploy new ceph-01
+# ceph-deploy new ceph-01 ceph-02 ceph-03
 ceph-deploy install ceph-01 ceph-02 ceph-03
 ```
 
@@ -95,6 +106,22 @@ ceph-deploy mon create-initial
 `admin`是ceph-deploy的参数
 ```
 ceph-deploy admin ceph-01 ceph-02 ceph-03
+yum -y install ceph ceph-mgr ceph-mds ceph-mon ceph-radosgw
+```
+
+```
+# 查看集群状态
+ceph -s
+# 创建mgr
+ceph-deploy mgr create ceph-01
+# 添加mon节点
+ceph-deploy mon add ceph-02 --address 192.168.1.188
+ceph-deploy mon add ceph-03 --address 192.168.1.189
+# 查看mon状态
+ceph mon stat
+ceph mon dump
+# 扩展mgr
+ceph-deploy mgr create ceph-02 ceph-03
 ```
 
 #### 清空磁盘
@@ -106,6 +133,11 @@ ceph-doploy disk zap ceph-01 /dev/sdb
 ceph-deploy osd create ceph-01 --data /dev/sdb
 ceph-deploy osd create ceph-02 --data /dev/sdb
 ceph-deploy osd create ceph-03 --data /dev/sdb
+```
+
+### 查看osd树
+```
+ceph osd tree
 ```
 
 ### 创建RBD资源池
