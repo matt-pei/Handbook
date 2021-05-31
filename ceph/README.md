@@ -2,19 +2,19 @@
 
 ### 设备主机名
 ```
-hostnamectl set-hostname --static ceph-01 && bash
-hostnamectl set-hostname --static ceph-02 && bash
-hostnamectl set-hostname --static ceph-03 && bash
+hostnamectl set-hostname --static ceph001 && bash
+hostnamectl set-hostname --static ceph002 && bash
+hostnamectl set-hostname --static ceph003 && bash
 # 
 cat >> /etc/hosts <<EOF
 
-192.168.1.187  ceph-01
-192.168.1.188  ceph-02
-192.168.1.189  ceph-03
+192.168.1.187  ceph001
+192.168.1.188  ceph002
+192.168.1.189  ceph003
 EOF
 ```
 
-### ceph管理
+### 设置免密登录
 ```
 # 设置ssh免密登陆
 ssh-keygen -t rsa
@@ -22,7 +22,7 @@ ssh-keygen -t rsa
 ssh-copy-id -i .ssh/id_rsa.pub ceph-02
 ssh-copy-id -i .ssh/id_rsa.pub ceph-03
 # 或
-for i in ceph-{02,03}; do ssh-copy-id -i .ssh/id_rsa.pub $i;done
+for i in ceph{002,003}; do ssh-copy-id -i .ssh/id_rsa.pub $i;done
 ```
 
 ### 所有节点
@@ -32,6 +32,9 @@ sed -i 's/^SELINUX=enforcing$/SELINUX=disabled/' /etc/selinux/config
 sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
 systemctl disable firewalld.service
 systemctl stop firewalld.service
+# 关闭NetworkManager
+systemctl stop NetworkManager
+systemctl disable NetworkManager
 ```
 
 ```
@@ -90,33 +93,32 @@ yum -y install ceph-deploy python-setuptools
 # 创建ceph目录
 mkdir -pv /etc/ceph-deploy && cd /etc/ceph-deploy
 # aliyun环境设置内网段地址
-ceph-deploy new --cluster-network 192.168.1.0/24 ceph-01
-# ceph-deploy new ceph-01
+ceph-deploy new --cluster-network 192.168.1.0/24 ceph001
 # ceph-deploy new ceph-01 ceph-02 ceph-03
-ceph-deploy install ceph-01 ceph-02 ceph-03
+```
+```
+# yum安装方式要在所有节点执行
+# ceph-deploy install ceph-01 ceph-02 ceph-03
+yum -y install ceph ceph-mgr ceph-mds ceph-mon ceph-radosgw
 ```
 
 ### 初始化monitor
 初始化完后会生成keyring文件
 ```
 ceph-deploy mon create-initial
-```
-
-### 拷贝认证密钥
 `admin`是ceph-deploy的参数
-```
-ceph-deploy admin ceph-01 ceph-02 ceph-03
-yum -y install ceph ceph-mgr ceph-mds ceph-mon ceph-radosgw
+# 拷贝认证密钥
+ceph-deploy admin ceph001 ceph002 ceph003
 ```
 
 ```
 # 查看集群状态
 ceph -s
-# 创建mgr
-ceph-deploy mgr create ceph-01
-# 添加mon节点
-ceph-deploy mon add ceph-02 --address 192.168.1.188
-ceph-deploy mon add ceph-03 --address 192.168.1.189
+# 创建mgr管理节点
+ceph-deploy mgr create ceph001
+# 扩展mon节点
+ceph-deploy mon add ceph002 --address 192.168.1.188
+ceph-deploy mon add ceph003 --address 192.168.1.189
 # 查看mon状态
 ceph mon stat
 ceph mon dump
@@ -130,9 +132,9 @@ ceph-doploy disk zap ceph-01 /dev/sdb
 ```
 ### 创建osd
 ```
-ceph-deploy osd create ceph-01 --data /dev/sdb
-ceph-deploy osd create ceph-02 --data /dev/sdb
-ceph-deploy osd create ceph-03 --data /dev/sdb
+ceph-deploy osd create ceph001 --data /dev/sdb
+ceph-deploy osd create ceph002 --data /dev/sdb
+ceph-deploy osd create ceph003 --data /dev/sdb
 ```
 
 ### 查看osd树
