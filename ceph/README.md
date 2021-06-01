@@ -127,7 +127,7 @@ ceph-deploy mgr create ceph002 ceph003
 ceph-deploy --overwrite-conf config push ceph001 ceph002 ceph003
 ```
 
-## 三、创建资源
+## 三、块存储
 ### 1、创建osd块设备
 ```
 ceph-deploy osd create ceph001 --data /dev/sdb
@@ -217,7 +217,68 @@ ceph crash ls
 ceph crash info xxxxxx
 ```
 
+### yum查看命令所在安装包
+yum whatprovides "*bin/netstat"
 
+## 四、对象存储
 
+```
+aws s3 ls s3://xxxx
+aws s3 cp xxx s3://xxxx
+# 安装rgw对象网关
+ceph-deploy rgw create ceph001 
+# 测试访问
+crul http://ceph001:7480
+# 修改rgw默认端口
+vim /etc/ceph-deploy/ceph.conf
+[client.rgw.ceph001]
+rgw_frontends = "civetweb port=80"
+# 覆盖节点配置
+ceph-deploy --overwrite-conf config push ceph001 xxxx xxxx
+# 重启rgs服务
+systemctl restart ceph-radosgw.target
+# 创建用户
+radosgw-admin create --uid ceph-s3-demo --displsy-name "Ceph S3 User Demo"
+# 查看用户信息
+radosgw-admin user info --uid ceph-s3-demo
+```
+```
+# 使用工具
+yum -y install s3cmd
+# 创建swift用户
+radosgw-admin subuser create --uid ceph-s3-demo --subuser=testuser:swift --access=full
+# 生成key
+radosge-admin key create --subuser=ceph-s3-demo:swift --key-type=swift --gen-ecret
+```
+
+## 五、文件存储
+
+```
+# 安装mds
+ceph-deploy mds create ceph001 ceph002 ceph003
+# 查看mds
+ceph mds stat
+ceph mds dump
+# 创建资源池--元数据
+ceph osd pool create cephfs_metadata 16 16
+# 创建资源池--数据
+ceph osd pool create cephfs_data 16 16
+# 创建文件系统
+ceph fs new cephfs-demo cephfs_metadata cephfs_data
+ceph fs ls
+```
+### 内核挂载
+```
+# 挂载cephfs
+mount -t ceph Ip:port:/  /path/
+```
+
+### 用户态挂载
+```
+# 安装客户端
+yum -y install ceph-fuse
+# 挂载
+ceph-fuse -n client.admin -m ip:port,ip:port,ip:port /path/
+```
 
 
