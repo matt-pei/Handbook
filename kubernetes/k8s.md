@@ -68,14 +68,16 @@ Kubespray
 
 
 ### 命令补全
+```
 yum -y install bash-completion
 kubectl completion -h
 # 临时生效
 source <(kubectl completion bash) 
 echo "source <(kubectl completion bash)" >> ~/.bashrc
 echo "source <(kubectl completion bash)" >> /root/.bashrc
+```
 
-
+```
 # 查看Token
 kubeadm token list
 # 创建Token
@@ -84,32 +86,39 @@ kubeadm token create
 kubeadm token delete
 # 获取ca证书sha256编码hash值
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2> /dev/null | openssl dgst -sha256 -her | sed 's/^.* //'
-
+```
 
 
 ### 资源信息
+```
 kubectl get nodes
 kubectl get nodes -o wide
 kubectl describe nodes node01 | less
 kubectl get nodes --show-labels
 kubectl label node node01 node-role.kubernetes.io/node=
 kubectl label node node01 node-role.kubernetes.io/node-
+```
 
 ### 命令空间
+```
 kubectl -n kube-system get pod
 kubectl create namespace xxx
 kubectl get namespace
 kubectl delete namespace xxx
 kubectl apply -f xxx.yaml
 kubectl delete -f xxx.yaml
+```
 
 ### pod
+```
 kubectl explain pod
 kubectl delete pod xxxx
 kubectl exec -it xxxx bash
 kubectl exec -it xxxx -c xxxx bash
 kubectl exec -it xxxx -c xxxx -- ls /root/
+```
 
+```
 kubectl run xxxx --image=xxx --image-pull-policy=IfNotPresent
 kubectl get deployments. xxxx -o yaml | less
 kubectl run xxxx --image=xxx --image-pull-policy=IfNotPresent --replicas=2
@@ -119,12 +128,16 @@ kubectl rollout history deployment xxxxx
 kubectl rollout history deployment xxxx --revision=1
 kubectl rollout undo deployment xxxx --to-revision=1
 kubectl scale deployment xxxxx --replicas=5
+```
 
+```
 kubectl get daemonsets
 kubectl expose deployment xxxx --target-port=xx --port=xx --type=ClusterIP
 kubectl get service
 kubectl get endpoints
+```
 
+```
 kubectl get job
 kubectl get configmap
 kubectl describe configmap xxxx
@@ -135,7 +148,7 @@ kubectl describe secrets xxxx
 kubectl get pv
 kubectl get pvc
 kubectl delete pvc xxx
-
+```
 
 
 
