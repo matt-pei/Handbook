@@ -22,6 +22,7 @@
 ### kubernetes 架构
 
 #### master
+```
 kube-apiServer 用于暴露k8 API 资源请求/调度操作
 etcd  默认存储系统、保存集群数据
 kube-controller-manager 运行管理控制器 管理集群线程
@@ -29,8 +30,10 @@ kube-controller-manager 运行管理控制器 管理集群线程
     副本Replication
     端点Endpoints
     Service Account和Token：namespace
+```
 
 #### node
+```
 kube-scheduler  做调度分配 根据请求资源做调度
 kubelet 维护容器生命周期 Volumen 网络（CNI）
 kube-proxy  在主机上维护网络规则 iptables/ipvs
@@ -38,10 +41,10 @@ container Runtime
 
 coredns/kube-dns    提供DNS
 Ingress 提供七层服务
-
+```
 
 ### pod调度流程
-
+```
          API server       ETCD       Scheduler    Kubelet     Docker
 cretepod---->|----write---> |
      <-------| <----------- |           |           |           |
@@ -54,17 +57,17 @@ cretepod---->|----write---> |
              | <---------update pod status----------|           |
              | ----write--->|           |           |           |
              |              |           |           |           |
-
+```
 ### kubernetes网络方案
             overlay             L3routing               upderlay
 描述        
 
 ### 搭建Kubernetes集群 工具
-Kubeadm
-
-Kops
-
-Kubespray
+>> Kubeadm
+>>
+>> Kops
+>>
+>> Kubespray
 
 
 ### 命令补全
