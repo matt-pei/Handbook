@@ -63,11 +63,11 @@ cretepod---->|----write---> |
 描述        
 
 ### 搭建Kubernetes集群 工具
->> Kubeadm
->>
->> Kops
->>
->> Kubespray
+> Kubeadm
+>
+> Kops
+>
+> Kubespray
 
 
 ### 命令补全
