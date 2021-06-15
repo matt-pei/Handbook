@@ -1,13 +1,14 @@
-# CKA 认证
+# Kubernetes CKA 认证
 
 ### cka & ckad 
 
 3个CKA认证 可申请KCSP（k8s服务器提供商）
 
 ### 考试内容
+```
 满分100 74及格
 24道题
-```
+
 应用生命周期管理    8%
 安装、配置和验证    12%
 核心概念    19%
@@ -30,11 +31,10 @@ kube-controller-manager 运行管理控制器 管理集群线程
     副本Replication
     端点Endpoints
     Service Account和Token：namespace
+kube-scheduler  做调度分配 根据请求资源做调度
 ```
-
 #### node
 ```
-kube-scheduler  做调度分配 根据请求资源做调度
 kubelet 维护容器生命周期 Volumen 网络（CNI）
 kube-proxy  在主机上维护网络规则 iptables/ipvs
 container Runtime
