@@ -80,6 +80,8 @@ EOF
 # 启动chronyd服务
 systemctl enable chronyd
 systemctl start chronyd
+# 立即手工同步
+chronyc -a makestep
 ```
 ```
 sed -i 's/^#ClientAliveInterval 0/ClientAliveInterval 30/' /etc/ssh/sshd_config
