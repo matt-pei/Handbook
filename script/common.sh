@@ -103,9 +103,175 @@ function check_dockercompose {
     fi
 }
 
+function initialize {
+    # 关闭selinux和firewalld
+    setenforce 0
+sed -i 's/^SELINUX=enforcing$/SELINUX=disabled/' /etc/selinux/config
+sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
+systemctl disable firewalld.service
+systemctl stop firewalld.service
+# 关闭NetworkManager
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+# 优化内核参数
+cat >> /etc/security/limits.conf <<EOF
+root    soft    nofile  100001
+root    hard    nofile  100002
+*        soft    core        10240
+*        hard    core        10240
+*        soft    data        unlimited
+*        hard    data        unlimited
+*        soft    fsize       unlimited
+*        hard    fsize       unlimited
+*        soft    memlock     unlimited
+*        hard    memlock     unlimited
+*        soft    nofile      1024000
+*        hard    nofile      1024000
+*        soft    rss         unlimited
+*        hard    rss         unlimited
+*        soft    stack       8194
+docker      soft    nproc       102400
+docker      hard    nproc       102400
+*        soft    locks       unlimited
+*        hard    locks       unlimited
+*        soft    sigpending  unlimited
+*        hard    sigpending  unlimited
+*        soft    msgqueue    unlimited
+*        hard    msgqueue    unlimited
+EOF
+cat >> /etc/sysctl.conf <<EOF
+kernel.shmmax = 50000000000
+#kernel.shmmni = 409600
+kernel.shmall = 400000000000
+kernel.sem = 500 20480 200 4096
+kernel.sysrq = 1
+kernel.core_uses_pid = 1
+kernel.msgmnb = 65536
+kernel.msgmax = 65536
+kernel.msgmni = 2048
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.tcp_max_syn_backlog = 4096
+net.ipv4.conf.all.arp_filter = 1
+net.ipv4.ip_local_port_range = 10000 65535
+net.core.netdev_max_backlog = 10000
+net.core.rmem_max = 2097152
+net.core.wmem_max = 2097152
+#vm.overcommit_memory = 2
+#vm.swappiness = 10
+vm.zone_reclaim_mode = 0
+vm.dirty_expire_centisecs = 500
+vm.dirty_writeback_centisecs = 100
+vm.dirty_background_ratio = 0
+vm.dirty_ratio = 0
+vm.dirty_background_bytes = 1610612736
+vm.dirty_bytes = 4294967296
+# ES配置
+vm.max_map_count=262144
+EOF
+# 执行命令生效
+sysctl -p
+# 安装时间服务器和需要的工具包
+yum -y install vim wget net-tools htop pciutils epel-release tcpdump
+yum -y install bash-completion chrony iotop sysstat iptables-services
+# 启动时间服务器
+cat > /etc/chrony.conf <<EOF
+server ntp.aliyun.com iburst
+stratumweight 0
+driftfile /var/lib/chrony/drift
+rtcsync
+makestep 10 3
+bindcmdaddress 127.0.0.1
+bindcmdaddress ::1
+keyfile /etc/chrony.keys
+commandkey 1
+generatecommandkey
+logchange 0.5
+logdir /var/log/chrony
+EOF
+systemctl enable chronyd
+systemctl start chronyd
+# 立即手工同步
+chronyc -a makestep
+# 配置域名解析
+cat >> /etc/hosts <<EOF
 
+127.0.0.1   cv.mysql.management.com
+127.0.0.1   cv.redis.management.com
+127.0.0.1   cv.nginx.management.com
+127.0.0.1   cv.kibana.management.com
+127.0.0.1   cv.elastic.management.com
+127.0.0.1   cv.aiserver.management.com
+127.0.0.1   cv.cm-server.management.com
+127.0.0.1   cv.up-server.management.com
+127.0.0.1   cv.device-server.management.com
+127.0.0.1   cv.device-agent.management.com
+EOF
+}
 
+function docker_install {
+    # 关闭swap交换分区
+    swapoff -a          # 临时关闭
+    # vim /etc/fstab    # 永久关闭,注释swap行
+    sed -i 's/.*swap.*/#&/' /etc/fstab
+    # 关闭NetworkManager
+    # systemctl stop NetworkManager.service
+    # systemctl disable NetworkManager.service
+    # 卸载旧docker版本
+    yum -y remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+    # 删除旧docker存储库
+    rm -rf /etc/yum.repos.d/docker*.repo
+    
+    # Install required packages.
+    yum install -y yum-utils device-mapper-persistent-data lvm2
+    # Add Docker repository.
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    # Install Docker CE.
+    yum install -y containerd.io-1.2.13 docker-ce-19.03.8 docker-ce-cli-19.03.8
+    
+    # Create /etc/docker directory.
+    mkdir /etc/docker
+    # Setup daemon
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "graph": "/data/docker_storage",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "insecure-registries" : ["192.168.176.230:8090","8.131.240.247:8090"],
+  "registry-mirrors": ["https://g427vmjy.mirror.aliyuncs.com"],
+  "live-restore": true
+}
+EOF
 
+mkdir -p /etc/systemd/system/docker.service.d
+# Restart Docker
+systemctl daemon-reload
+systemctl restart docker
+systemctl enable docker
+# 安装docker-compose
+curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+}
+
+function nvidia_docker {
+    # 此步骤需提前安装好nvidia驱动才可以正常使用GPU
+    # 安装nvidia-docker
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | sudo tee /etc/yum.repos.d/nvidia-docker.repo
+    yum install -y nvidia-container-toolkit
+    systemctl restart docker
+    # 测试GPU
+    docker run --rm --gpus all nvidia/cuda:10.0-base nvidia-smi
+    docker run --rm --gpus '"device=0"' nvidia/cuda:10.0-base nvidia-smi
+}
 
 
 
