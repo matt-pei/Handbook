@@ -273,6 +273,24 @@ function nvidia_docker {
     docker run --rm --gpus '"device=0"' nvidia/cuda:10.0-base nvidia-smi
 }
 
-
+function jdk_install {
+    # 移动配置文件到制定目录下
+    mkdir -p /data
+    mv aibox-common /data/
+    # 安装jdk环境
+    mkdir -p /opt/src
+    tar zxf /data/aibox-common/package/jdk-8u241-linux-x64.tar.gz -C /opt/src
+    sed -i '10i JAVA_HOME=/opt/src/jdk1.8.0_241' /etc/profile
+    sed -i '11i PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin' /etc/profile
+    source /etc/profile
+    # 配置up-server服务
+    tar zxf /data/aibox-common/package/device-up-server-2.0.3.0.tar.gz -C /data/aibox-common/package/
+    cp -r /data/aibox-common/package/device-up-server/up-server.service /lib/systemd/system/
+    systemctl enable up-server
+    systemctl start up-server
+    # 开启docker API
+    sed -i 's/^ExecStart.*/#&/' /lib/systemd/system/docker.service
+    sed -i '15i ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix://var/run/docker.sock -H fd:// --containerd=/run/containerd/containerd.sock' /lib/systemd/system/docker.service
+}
 
 

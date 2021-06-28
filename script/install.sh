@@ -27,6 +27,9 @@ check_docker
 h2 "[Set $item]: Checking docker-compose is installed ..."; let item+=1
 check_dockercompose
 
+h2 "[Set $item]: Install the JDK environment and configure the up-server service"; ley item+=1
+jdk_install
+
 if [ -n "$(docker-compose ps -q)" ]
 then
     note "Stop Deploying the Service..."
