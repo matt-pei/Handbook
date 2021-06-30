@@ -39,6 +39,12 @@ echo ""
 
 h2 "[Set $item]: Starting deployment..."
 docker-compose up -d
+docker run -dit --restart always --name ai-server --gpus all \
+        --network host --ulimit core=0:0 -p 28865:28865 \
+        -v /data/aibox-common/ai-server/logs:/home/nvidia/aibox/logs \
+        -v /data/aibox-common/aimodel:/home/nvidia/aibox/aimodel \
+        -v /data/aibox-common/common:/home/nvidia/aibox/common \
+        -v /etc/localtime:/etc/localtime:ro 192.168.176.230:8090/rz2.1.0.0/ai-mgt:v2.0.2.4
 
 sucess $"----Deployment has been installed and started successfully.----"
 
