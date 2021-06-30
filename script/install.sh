@@ -2,8 +2,8 @@
 
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
-source $DIR/common
-source $DIR/deployment
+source $DIR/common.sh
+# source $DIR/deployment
 
 set +o noglob
 

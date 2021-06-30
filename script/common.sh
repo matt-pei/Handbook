@@ -66,7 +66,7 @@ function check_docker {
 
         note "docker version: $docker_version"
         # Determine the Docker version
-        if [ "docker_version" -lt 19 ] || ([ "docker_version_part1" -eq 19 ] && [ "docker_version_part2" -lt 3 ] && [ "docker_version_part3" -lt 3 ])
+        if [ "$docker_version" -lt 19 ] || ([ "$docker_version_part1" -eq 19 ] && [ "$docker_version_part2" -lt 3 ] && [ "$docker_version_part3" -lt 3 ])
         then
             error "Need to upgrade docker package to 19.03.3+."
             exit 1
