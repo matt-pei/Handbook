@@ -66,7 +66,7 @@ function check_docker {
 
         note "docker version: $docker_version"
         # Determine the Docker version
-        if [ "$docker_version" -lt 19 ] || ([ "$docker_version_part1" -eq 19 ] && [ "$docker_version_part2" -lt 3 ] && [ "$docker_version_part3" -lt 3 ])
+        if [ "$docker_version_part1" -lt 19 ] || ([ "$docker_version_part1" -eq 19 ] && [ "$docker_version_part2" -lt 3 ] && [ "$docker_version_part3" -lt 3 ])
         then
             error "Need to upgrade docker package to 19.03.3+."
             exit 1
@@ -92,7 +92,8 @@ function check_dockercompose {
 
         note "docker-compose version: $docker_compose_version"
         # Determine the docker-compose version
-        if [ "$docker_compose_version_part1" -lt 1 ] || ([ "$docker_compose_version_part1" -eq 1 ] && [ "$docker_compose_version_part2" -lt 27 ])
+        # if [ "$docker_compose_version_part1" -lt 1 ] || ([ "$docker_compose_version_part1" -eq 1 ] && [ "$docker_compose_version_part2" -lt 27 ])
+        if [ "$docker_version_part1" -lt 17 ] || ([ "$docker_version_part1" -eq 17 ] && [ "$docker_version_part2" -lt 6 ])
         then
             error "Need to upgrade docker-compose package to 1.27.0+."
             exit 1
@@ -294,3 +295,10 @@ function jdk_install {
 }
 
 
+
+rm -rf /usr/bin/docker-compose
+rm -rf /usr/lib/systemd/system/docker.service
+rm -rf /etc/docker
+vi /etc/hosts
+vi /etc/sysctl.conf
+vi /etc/security/limits.conf
