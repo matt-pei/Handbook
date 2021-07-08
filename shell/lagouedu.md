@@ -165,3 +165,150 @@ check_http_send?HEAD /HTTP/1.1\r\nConnection:keep-alive\r\n\r\n?; //定义健康
 check_http_expect_alive http_2xx http_3xx; //判断返回状态码
 ```
 
+# 四、服务注册发现Openresty
+## 动态upstream
+### 1实现意义
+#### 常见问题场景
+#### 实现意义介绍
+### 2实现方式
+#### Openresty动态upstream
+```
+openresty动态upstream, 基于nginx+Lua的变成方式自建
+开源组件方案,基于nginx+开源组件,用西现成组件功能来完善nginx本身功能上的缺失
+开源API网管方案,采用专用网关服务(如Kong、treafik)整体打包替换nginx
+```
+#### 开源组件方案(confd、nginx-upsync-module)
+#### 开源AP网关方案(Kong、traefik)
+
+## Curl命令使用方式
+### 1网站服务状态分析
+#### 查看返回状态
+```
+模拟业务做http请求判断返回状态 
+```
+#### 显示通信过程
+```
+curl -v www.xxx.com
+-v 显示通信过程
+curl -v -L www.xxx.com
+-L 重定向后的地址
+curl -e "http://www.xxx.com" -I http://www.xxx.com/xxx.tgz
+-e 添加referer信息
+curl -E/--cert  指定证书
+```
+#### IPv6站点模拟检测
+```
+curl -6 -vo /dev/null --resolve "static.meituan.net:80:[240e:ff:e02c:1:21::]" "http:static.meituan.net/bs/@mtfe/knb-core/latest/dist/index.js"
+-6 发起ipv6地址的请求
+-v 显示通信过程
+-o 表示把请求返回body数据放到空设备上,也就是不显示body 只显示头部信息相当于-i的作用
+--resolve 表示做的是域名和IP解析
+```
+### 2功能性用途
+#### 文件上传/下载
+```
+curl -O -u 用户名:密码 ftp://www.xxx.com
+curl -O http://www.xxx.com/xxx.sh
+curl -C http://www.xxx.com/xxx.sh 开启断点续传
+```
+#### 多种请求方法
+```
+curl -X 请求方法
+-X POST/PUT/DELETE
+```
+#### 代理模式
+```
+curl -x 1.1.1.1 wwww.xxx.com
+```
+
+# 五、系统性能验收
+- 性能指标
+  - 业务情况
+    - 业务特性
+      - 业务高/低峰期
+      - 业务类型
+      - 业务架构
+    - 业务指标
+      - QPS
+      - TPS
+      - 并发连接
+      - 响应延迟
+  - 系统情况
+    - 影响系统性能的参数调试（p-state c-state）
+    - 系统本身的缺陷、补丁（"熔断"和"幽灵" 安全补丁）
+## 性能指标
+### 业务压测
+```
+ab/webbench
+```
+### 服务压测
+```
+sysbench
+```
+### 网络压测
+```
+netperf
+```
+### 系统压测
+```
+硬件、系统、开发库
+cpu、内存、磁盘、网卡
+```
+### unixbench
+```
+unixbench是一个基于系统的基准测试工具
+给出一个通用标准基准的分数值 在它的基础上对其他操作系统进行打分
+用于衡量这个操作系统到底应该给多少分, 和基础的差异有多大
+
+-q 不显示测试过程
+-v 显示测试过程, 把测试过程是否显示做了一个控制
+-i <count> 执行次数 最低3次 默认10次
+-c 在多核cpu场景测试指标 了解操作系统上多核cpu的性能程度
+
+Dhrystone   该测试侧重字符串处理 没有浮点运算
+Whetstone   测试浮点运算速度和效率
+Execl Throughput    测量execl每秒可执行的系统调用次数
+File Copy   测试数据从一个文件传输到另一个文件的传输效率
+Pipe Throughput     测试每秒一个进程将512字节写入管道并读取的次数
+Pipe-based Context Switching    测试每秒两个进程通过一个管道交换一个不断增长的整数次数
+Process Creation    测试每秒一个进程可以创建及回收子进程的次数
+Shell Script    测试每秒进程可以并发获取一个shell脚本的n个副本的次数 n取值为1248
+System Call Overhead    测试进入和离开操作系统内核的开销 即执行系统调用的消耗
+Graphical Test  测试显卡2D和3D图形的大概性能 结果显示系统是否安装适当的驱动
+```
+
+# FIO磁盘IO测试工具
+
+### lops
+每秒进行读写（IO）操作的次数越多说明执行数据就越快
+### BW(吞吐量)
+每秒对于磁盘的读写数据量 单位为MB/s 数值越高表示读写数据越多
+### 读写延迟
+单个IO去写磁盘 做一次IO操作的耗时是多少
+
+针对延迟测试时 会把对应的深度调为1
+就模拟一个队列去做磁盘操作的的时候 把块大小设置为4K
+
+硬盘吞吐测试
+要尽可能的把总线带宽或者IO带宽整个跑满
+
+需要把队列调到更大（32）
+把bs单个块的大小调到比较大的一个值（128k）
+
+iops指标测试
+在单位时间里尽可能去多去读磁盘
+就会把bs块的能力给他调小 同时会把队列调到最大
+这时才能测试在单位秒能够读写操作磁盘
+
+
+
+# 五定时任务管理系统
+- 子系统
+  - 前端任务系统
+    - 记录单个任务的执行情况（如执行的时间、执行任务的结果）
+    - 控制单个任务的一些属性（如对单个任务进行启动、停止或者修改任务周期）
+  - 后台管理系统
+    - 基于Xadmin框架搭建 主要用于编辑、添加或删除任务
+  - 脚本录入系统
+    - 基于python开发 主要是方便运维人员在控制台能够快速的通过脚本方式录入任务
+
