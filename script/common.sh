@@ -66,7 +66,8 @@ function check_docker {
 
         note "docker version: $docker_version"
         # Determine the Docker version
-        if [ "$docker_version_part1" -lt 19 ] || ([ "$docker_version_part1" -eq 19 ] && [ "$docker_version_part2" -lt 3 ] && [ "$docker_version_part3" -lt 3 ])
+        # if [ "$docker_version_part1" -lt 19 ] || ([ "$docker_version_part1" -eq 19 ] && [ "$docker_version_part2" -lt 3 ] && [ "$docker_version_part3" -lt 3 ])
+        if [ "$docker_version_part1" -lt 17 ] || ([ "$docker_version_part1" -eq 17 ] && [ "$docker_version_part2" -lt 6 ])
         then
             error "Need to upgrade docker package to 19.03.3+."
             exit 1
@@ -84,7 +85,8 @@ function check_dockercompose {
         exit 1
     fi
     # docker-compose has been installed, check its version
-    if [[ $(docker-compose --version) =~ (([0-9]+)\.([0-9]+)\.([0-9]*)) ]]
+    # if [[ $(docker-compose --version) =~ (([0-9]+)\.([0-9]+)\.([0-9]*)) ]]
+    if [ "$docker_compose_version_part1" -lt 1 ] || ([ "$docker_compose_version_part1" -eq 1 ] && [ "$docker_compose_version_part2" -lt 27 ])
     then
         docker_compose_version=${BASH_REMATCH[1]}
         docker_compose_version_part1=${BASH_REMATCH[2]}
@@ -111,6 +113,21 @@ sed -i 's/^SELINUX=enforcing$/SELINUX=disabled/' /etc/selinux/config
 sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config
 systemctl disable firewalld.service
 systemctl stop firewalld.service
+#启动防火墙
+systemctl restart firewalld
+iptables -F
+#开机自启
+systemctl enable firewalld
+#开启80，28092，22，1935的tcp端口
+firewall-cmd --zone=public --add-port=80/tcp
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+firewall-cmd --zone=public --add-port=28092/tcp
+firewall-cmd --zone=public --add-port=28092/tcp --permanent
+firewall-cmd --zone=public --add-port=1935/tcp
+firewall-cmd --zone=public --add-port=1935/tcp --permanent
+firewall-cmd --zone=public --add-port=22/tcp
+firewall-cmd --zone=public --add-port=22/tcp --permanent
+firewall-cmd --reload
 # 关闭NetworkManager
 systemctl stop NetworkManager
 systemctl disable NetworkManager
@@ -208,6 +225,12 @@ cat >> /etc/hosts <<EOF
 127.0.0.1   cv.device-server.management.com
 127.0.0.1   cv.device-agent.management.com
 EOF
+
+pic_dir=/data/pictures
+
+if [ ! -d $pic_dir ]; then
+    mkdir -p $pic_dir
+fi
 }
 
 function docker_install {
@@ -231,7 +254,9 @@ function docker_install {
     yum install -y containerd.io-1.2.13 docker-ce-19.03.8 docker-ce-cli-19.03.8
     
     # Create /etc/docker directory.
-    mkdir /etc/docker
+    if [ ! -d $docker_dir ]; then
+        mkdir -p $docker_dir
+    fi
     # Setup daemon
 cat > /etc/docker/daemon.json <<EOF
 {
@@ -251,15 +276,21 @@ cat > /etc/docker/daemon.json <<EOF
 }
 EOF
 
-mkdir -p /etc/systemd/system/docker.service.d
+docker_service_dir=/etc/systemd/system/docker.service.d
+if [ ! -f $docker_service_dir ]; then
+    mkdir -p $docker_service_dir
+fi
 # Restart Docker
 systemctl daemon-reload
 systemctl restart docker
 systemctl enable docker
 # 安装docker-compose
-curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+compose_dir=/usr/local/bin/docker-compose
+if [ ! -f $compose_dir ]; then
+    curl -L "https://github.com/docker/compose/releases/download/2.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+    ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+fi
 }
 
 function nvidia_docker {
@@ -276,17 +307,33 @@ function nvidia_docker {
 
 function jdk_install {
     # 移动配置文件到制定目录下
-    mkdir -p /data
-    mv aibox-common /data/
+    data_dir=/data/
+    if [ ! -d $data_dir ]; then
+        mkdir -p $data_dir
+    fi
+
+    common_dir=/data/aibox-common
+    if [ -d $common_dir ];then
+        rm -rf $common_dir && mv aibox-common /data/
+    else
+        mv aibox-common /data/
+    fi
+
     # 安装jdk环境
-    mkdir -p /opt/src
+    src_dir=/opt/src
+    if [ ! -d $src_dir ]; then
+        mkdir -p $src_dir
+    fi
     tar zxf /data/aibox-common/package/jdk-8u241-linux-x64.tar.gz -C /opt/src
     sed -i '10i JAVA_HOME=/opt/src/jdk1.8.0_241' /etc/profile
     sed -i '11i PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin' /etc/profile
     source /etc/profile
     # 配置up-server服务
     tar zxf /data/aibox-common/package/device-up-server-2.0.3.0.tar.gz -C /data/aibox-common/package/
-    cp -r /data/aibox-common/package/device-up-server/up-server.service /lib/systemd/system/
+    upserver_file=/lib/systemd/system/up-server.service
+    if [ ! -f $upserver_file ]; then
+        cp -r /data/aibox-common/package/device-up-server/up-server.service /lib/systemd/system/
+    fi
     systemctl enable up-server
     systemctl start up-server
     # 开启docker API

@@ -50,11 +50,3 @@ sucess $"----Deployment has been installed and started successfully.----"
 
 
 
-
-
-docker volume create \
-	--driver local \
-	--opt type=cifs \
-    --opt device=//152.168.170.11/DESKTOP-5Q8NGJH\third \
-	--opt o=addr=152.168.170.11,username=cv,password=cv@123,file_mode=0777,dir_mode=0777 \
-	--name cifs-volume
