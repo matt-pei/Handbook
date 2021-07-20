@@ -52,7 +52,7 @@ systemctl disable NetworkManager
 ```
 # master生成密钥
 ssh-keygen -t rsa
-for i in k8s-node{001,k8s-node002};do ssh-copy-id -i ~/.ssh/id_rsa.pub  root@$i;done
+for i in k8s-node{001,002};do ssh-copy-id -i ~/.ssh/id_rsa.pub  root@$i;done
 ```
 > ssh-keygen -t rsa -P ''
 > 
