@@ -29,8 +29,8 @@ echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
 cat >> /etc/hosts <<EOF
 192.168.10.222   k8s-master
-192.168.10.223   k8s-node01
-192.168.10.224   k8s-node02
+192.168.10.223   k8s-node001
+192.168.10.224   k8s-node002
 # cfssl
 104.16.234.19   pkg.cfssl.org
 104.16.235.19   pkg.cfssl.org
