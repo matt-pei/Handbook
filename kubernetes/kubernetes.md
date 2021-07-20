@@ -18,9 +18,9 @@
 # master
 hostnamectl set-hostname --static k8s-master && bash
 # node01
-hostnamectl set-hostname --static k8s-node01 && bash
+hostnamectl set-hostname --static k8s-node001 && bash
 # node02
-hostnamectl set-hostname --static k8s-node02 && bash
+hostnamectl set-hostname --static k8s-node002 && bash
 
 # 显示当前主机名设置
 hostnamectl status
