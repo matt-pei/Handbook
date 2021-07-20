@@ -60,6 +60,17 @@ for i in k8s-node{001,002};do ssh-copy-id -i ~/.ssh/id_rsa.pub $i;done
 
 - 4、安装常用工具
 ```
+# 下载repo源
+wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
+# 缓存
+yum makecache
+# 下载epel源
+mkdir -p /etc/yum.repos.d/backup
+mv /etc/yum.repos.d/epel.repo /etc/yum.repos.d/backup
+mv /etc/yum.repos.d/epel-testing.repo /etc/yum.repos.d/backup
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+```
+```
 yum -y install vim wget iotop htop pciutils tcpdump sysstat epel-release
 yum -y install chrony net-tools bash-completion iptables-services
 # 修改chrony配置文件
