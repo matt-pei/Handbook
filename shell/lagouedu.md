@@ -357,3 +357,69 @@ syncookies 一般用来防范SYN的攻击或者释放对于sync_backlog的依赖
 3次握手能够正常进行
 ```
 
+# 七、Jenkins持续集成
+
+```
+主要强调：
+    1、开发人员在提交了新的代码后 记录进行构建、（单元）测试等相关流程
+    2、自动化部署到生产环境
+
+# 持续集成和DevOps的差异
+持续集成：开发、测试、部署
+DevOps：开发、测试、部署、运维
+
+# 共同技术要求
+自动化：要做到部署自动化、测试自动化等
+各项流程需要无缝打通：开发到测试 测试到部署、要求无缝把各个管理环节和流程打通
+交给统一平台进行可视化管理
+```
+## 小型集成架构
+```
+用svn或者git来做代码版本的管理
+调用到maven或者ant来实现java代码的编译和构建
+企业会搭建一个自己的私服   可以代理 远程仓库和部署自己或第三方构件
+Junit和TestLink通常可以用来做单元测试
+Shell脚本则起到了串联发布流程的作用
+```
+## 快速搭建
+```
+Gitlab:
+    docker pull gitlab/gitlab-ce
+    docker run -dit --hostname gitlab.test.com -p 443:443 -p 80:80 \
+        -p 10022:22 --name gitlab --restart always \
+        -v /data/gitlab/config:/etc/gitlab
+        -v /data/gitlab/logs:/var/log/gitlab
+        -v /data/gitlab/data:/var/opt/gitlab gitlab/gitlab-ce:latest
+Jenkins:
+    docker run -dit --restart always -p 6060:8080 -p 50000:50000 --name jenkins --privileged=true -v /data/jenkins:/var/jenkins_home jenkins/jenkins
+```
+
+## Jenkins日志文件提及过大的问题
+```
+一
+产生的日志集中,且没有一个可切割的工具
+它会导致磁盘占用率过高,需要有一个方式进行定时清理
+运维 人员不可能频繁去机器上做日志清理
+二
+如果通过rm命令删除日志肯能会遇到一个问题
+就是Jenkins本身占用这个进程
+我们删除日志文件以后, 进程依然是在运行状态
+所以空间并不会立马释放, 需要重启jenkins进程
+
+logrotate 用于分割日志,可以起到一个日志轮转的作用
+/var/log/jenkins/jenlins.log{
+    hourly      //日志切割频率
+    copytruncate    //输出的日志拷一个出来 在清空原来的日志
+    missingok       //包容文件没有找的的错误
+    rotate 8        //轮转次数及保留的文件数
+    compress        //是否通过gzip压缩转存以后的日志文件
+    delatcompress   //延迟压缩
+    size 5G         //目标文件需要满足大于指定大小（最高优先）
+}
+配置好配置文件后
+可以调用logrotate --force /etc/logrotate.d/jenkins命令后面加配置文件来做日志切割
+可以加入到logrotate的定时任务去执行的这条命令
+```
+
+
+ 
