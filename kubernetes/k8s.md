@@ -75,9 +75,11 @@ cretepod---->|----write---> |
 yum -y install bash-completion
 kubectl completion -h
 # 临时生效
-source <(kubectl completion bash) 
-echo "source <(kubectl completion bash)" >> ~/.bashrc
+source <(kubectl completion bash)
+
+echo 'source <(kubectl completion bash)' >>~/.bashrc
 echo "source <(kubectl completion bash)" >> /root/.bashrc
+kubectl completion bash >/etc/bash_completion.d/kubectl
 ```
 
 ```
