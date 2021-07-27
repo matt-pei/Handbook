@@ -80,8 +80,7 @@ source <(kubectl completion bash)
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 # echo "source <(kubectl completion bash)" >> /root/.bashrc
 kubectl completion bash >/etc/bash_completion.d/kubectl
-```
-
+```k
 ```
 # 查看Token
 kubeadm token list
@@ -90,7 +89,7 @@ kubeadm token create
 # 删除Token
 kubeadm token delete
 # 获取ca证书sha256编码hash值
-openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2> /dev/null | openssl dgst -sha256 -her | sed 's/^.* //'
+openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2> /dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
 ```
 
 
