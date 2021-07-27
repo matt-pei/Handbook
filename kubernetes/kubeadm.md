@@ -1,6 +1,6 @@
 # 🛠 Deploy Kubernetes using Kubeadm
 
-<img alt="kubeadm log" src="" width="100">
+<img alt="kubeadm log" src="../images/kuernetes/kubeadm-stacked-color.png" width="100">
 
 ---
 
