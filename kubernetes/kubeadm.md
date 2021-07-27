@@ -157,8 +157,6 @@ systemctl enable docker
 ```
 
 ## 4、安装Kubeadm
-> 在master上执行
-
 - 1、配置存储库
 ```
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
@@ -180,6 +178,8 @@ yum -y install kubeadm-1.19.13 kubelet-1.19.13 kubectl-1.19.13
 systemctl enable kubelet && systemctl start kubelet
 ```
 - 3、初始化集群
+> 仅在master上执行
+>
 > apiserver-advertise-address参数根据实际Ip配置
 ```
 kubeadm init --apiserver-advertise-address=172.25.188.66 \
@@ -190,14 +190,23 @@ sed -i '10i export KUBECONFIG=/etc/kubernetes/admin.conf' /etc/profile
 source /etc/profile
 # 检查Kubernetes集群证书过期
 kubeadm certs check-expiration
+# kubernetes v1.20版本以下使用此命令
+kubeadm alpha certs check-expiration
 ```
-- 4、
-
+- 4、安装网络插件
 ```
 # 安装Flannel
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-
 # 安装Calico
 curl https://docs.projectcalico.org/manifests/calico.yaml -O
 kubectl apply -f calico.yaml
+```
+- 5、配置资源信息
+```
+# 查看节点label
+kubectl get nodes --show-labels
+# 更改node节点label
+kubectl label node k8s-nodexxx node-role.kubernetes.io/node=
+
+kubectl get nodes
 ```
