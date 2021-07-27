@@ -81,6 +81,18 @@ systemctl start chronyd
 # 立即手工同步
 chronyc -a makestep
 ```
+- 5、配置iptables网桥
+```
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
+
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+```
 
 ## 3、安装容器运行时
 - 1、关闭swap分区
@@ -93,14 +105,61 @@ sed -i 's/.*swap.*/#&/' /etc/fstab
 # systemctl stop NetworkManager.service
 # systemctl disable NetworkManager.service
 ```
+- 2、卸载旧dokcer版本
+```
+# 卸载旧docker版本
+# https://docs.docker.com/install/linux/docker-ce/centos/
+yum -y remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+# 删除旧docker存储库
+rm -rf /etc/yum.repos.d/docker*.repo
+```
+- 3、设置存储库
+```
+### Install required packages.
+yum install -y yum-utils device-mapper-persistent-data lvm2
 
+### Add Docker repository.
+yum-config-manager --add-repo \
+  https://download.docker.com/linux/centos/docker-ce.repo
 
+## Install Docker CE.
+yum install -y containerd.io-1.2.13 docker-ce-19.03.8 docker-ce-cli-19.03.8
+# yum -y install docker-ce-19.03.4 docker-ce-cli-19.03.4 containerd.io-1.2.10
+```
+- 4、创建docker配置文件
+```
+## Create /etc/docker directory.
+mkdir /etc/docker
+# Setup daemon
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "graph": "/data/docker_storage",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "registry-mirrors": ["https://g427vmjy.mirror.aliyuncs.com"]
+}
+EOF
+```
+- 5、
+```
+mkdir -p /etc/systemd/system/docker.service.d
+# Restart Docker
+systemctl daemon-reload
+systemctl restart docker
+systemctl enable docker
+```
 
+## 4、安装Kubeadm
+> 在master上执行
 
-
-
-
-
+- 1、配置存储库
 ```
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -111,23 +170,28 @@ gpgcheck=1
 repo_gpgcheck=1
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
-
+```
+- 2、安装kubeadm
+```
 # 安装指定版本
 yum list kubeadm kubectl kubelet --showduplicates
-yum -y install kubeadm-1.20.0 kubectl-1.20.0 kubelet-1.20.0
+yum -y install kubeadm-1.19.13 kubelet-1.19.13 kubectl-1.19.13
+# yum -y install kubeadm-1.20.9 kubectl-1.20.9 kubelet-1.20.9
 systemctl enable kubelet && systemctl start kubelet
 ```
-
+- 3、初始化集群
+> apiserver-advertise-address参数根据实际Ip配置
 ```
 kubeadm init --apiserver-advertise-address=172.25.188.66 \
              --image-repository registry.aliyuncs.com/google_containers \
              --pod-network-cidr=192.168.0.0/16
 
-export KUBECONFIG=/etc/kubernetes/admin.conf
-
+sed -i '10i export KUBECONFIG=/etc/kubernetes/admin.conf' /etc/profile
+source /etc/profile
 # 检查Kubernetes集群证书过期
 kubeadm certs check-expiration
 ```
+- 4、
 
 ```
 # 安装Flannel

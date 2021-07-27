@@ -76,9 +76,9 @@ yum -y install bash-completion
 kubectl completion -h
 # 临时生效
 source <(kubectl completion bash)
-
+# 永久生效
 echo 'source <(kubectl completion bash)' >>~/.bashrc
-echo "source <(kubectl completion bash)" >> /root/.bashrc
+# echo "source <(kubectl completion bash)" >> /root/.bashrc
 kubectl completion bash >/etc/bash_completion.d/kubectl
 ```
 
