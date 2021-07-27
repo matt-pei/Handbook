@@ -9,8 +9,8 @@
 | 角色 | IP | 组件 |
 | :----:| :----: | :----: |
 | k8s-master | 172.25.188.69 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd |
-| k8s-node01 | 172.25.188.70 | kubelet、kube-proxy、docker |
-| k8s-node01 | 172.25.188.71 | kubelet、kube-proxy、docker |
+| k8s-node001 | 172.25.188.70 | kubelet、kube-proxy、docker |
+| k8s-node002 | 172.25.188.71 | kubelet、kube-proxy、docker |
 
 ## 2、在开始之前
 - 1、设置主机名
