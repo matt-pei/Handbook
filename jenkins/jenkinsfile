@@ -1,0 +1,61 @@
+
+
+pipeline {
+    agent{
+        // any
+        node{ label "master" }
+    }
+    options{
+        timeout(time:1, unit: "HOURS")
+    }
+    stages{
+        // 检出代码
+        stage("CheckOut"){ // 阶段名称
+            setps{  //步骤
+                timeout(time:5, unit: "MINUTES"){   //步骤超时时间
+                    script{
+                        println("拉取代码")
+                    }
+                }
+            }
+        }
+
+        // 构建代码
+        stage("Build"){
+            setps{
+                echo "Hello World"
+                script{
+                    println("构建代码")
+                }
+            }
+        }
+    }
+
+    // 构建后操作
+    post{
+        always {
+            script{
+                println("always")
+            }
+        }
+
+        success {
+            script{
+                currentBuild.description += "\n 构建成功"
+            }
+        }
+
+        failure {
+            script{
+                currentBuild.description += "\n 构建失败"
+            }
+        }
+
+        aborted {
+            script{
+                currentBuild.description = "\n 取消构建"
+            }
+        }
+    }
+}
+
