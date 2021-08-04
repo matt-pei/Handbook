@@ -4,7 +4,7 @@
 
 ## 1、声明式Pipeline
 
-### pipeline代码块
+### 1、pipeline代码块
 ```
 声明式pipeline在流水线上提供一种简单的语法,所有的声明式都是必须包含一个pipeline代码块
 声明式pipeline中基本语法遵循Groovy语法
@@ -17,7 +17,7 @@ pipeline{
 }
 ```
 
-### agent(代理)
+### 2、agent(代理)
 ```
 agent参数:
 any: 在任何可用节点上执行pipeline
@@ -28,7 +28,7 @@ node: 额外配置选项
     agent { label 'labelname' }
 ```
 
-### post
+### 3、post
 ```
 定义一个或多个steps
 always: 无论流水线或阶段完成状态
@@ -57,7 +57,7 @@ pipeline{
 
 ```
 
-### stages(阶段)
+### 4、stages(阶段)
 ```
 包含或一个或多个stage,至少包含一个stage指定用于连续交付 如:构建、测试、和部署
 pipeline{
@@ -75,7 +75,7 @@ pipeline{
 }
 ```
 
-### steps(步骤)
+### 5、steps(步骤)
 ```
 steps是在每个阶段中的步骤
 pipeline{
@@ -93,7 +93,7 @@ pipeline{
 }
 ```
 
-# environment
+### 6、environment
 ```
 environment定义为环境变量 或特定阶段步骤,指令指定一个键值对
 pipeline{
@@ -114,7 +114,7 @@ pipeline{
 }
 ```
 
-### option
+### 7、option
 ```
 option允许从流水线内部配置特定鱼流水线的选项
 buildDiscarder: 为最近流水线运行特定数量保存组件和控制台输出
@@ -141,7 +141,7 @@ pipeline{
 }
 ```
 
-### 参数
+### 8、参数
 ```
 流水线在运行时设置的参数
 string 字符串类型参数
@@ -167,7 +167,7 @@ pipeline{
 }
 ```
 
-### 触发器
+### 9、触发器
 ```
 cron计划任务
     tiggers{ cron('H */5 * * 0-6') }
@@ -189,7 +189,7 @@ pipeline{
 }
 ```
 
-### tool
+### 10、tool
 ```
 能够获取通过自动安装或者手动安装的工具环境变量, 如: maven/ant/gradle/npm等 工具名称需在配置中定义
 
@@ -208,7 +208,7 @@ pipeline{
 }
 ```
 
-### step
+### 11、step
 #### script
 ```
 script步骤需在scripted-pipeline 声明流水线中执行
