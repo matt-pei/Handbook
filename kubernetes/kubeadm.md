@@ -148,7 +148,7 @@ cat > /etc/docker/daemon.json <<EOF
   "storage-opts": [
     "overlay2.override_kernel_check=true"
   ],
-  "registry-mirrors": ["https://g427vmjy.mirror.aliyuncs.com"]
+  "registry-mirrors": ["https://9vmq4adx.mirror.aliyuncs.com"]
 }
 EOF
 ```
