@@ -187,7 +187,8 @@ systemctl enable kubelet && systemctl start kubelet
 >
 > apiserver-advertise-address参数根据实际Ip配置
 ```
-kubeadm init --apiserver-advertise-address=172.25.188.66 \
+kubeadm init --apiserver-advertise-address=172.25.188.66 --image-repository registry.aliyuncs.com/google_containers --pod-network-cidr=192.168.0.0/16
+# kubeadm init --apiserver-advertise-address=172.25.188.66 \
              --image-repository registry.aliyuncs.com/google_containers \
              --pod-network-cidr=192.168.0.0/16
 
