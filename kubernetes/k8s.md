@@ -80,7 +80,7 @@ source <(kubectl completion bash)
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 # echo "source <(kubectl completion bash)" >> /root/.bashrc
 kubectl completion bash >/etc/bash_completion.d/kubectl
-```k
+```
 ```
 # 查看Token
 kubeadm token list
