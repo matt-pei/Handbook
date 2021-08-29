@@ -6,11 +6,11 @@
 
 ## Kubeadm部署集群
 ## 1、配置规划
-| 角色 | IP | 组件 |
-| :----:| :----: | :----: |
-| k8s-master | 172.25.188.69 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd |
-| k8s-node001 | 172.25.188.70 | kubelet、kube-proxy、docker |
-| k8s-node002 | 172.25.188.71 | kubelet、kube-proxy、docker |
+|    角色     |      IP       |                              组件                              |
+| :---------: | :-----------: | :------------------------------------------------------------: |
+| k8s-master  | 172.25.188.69 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd |
+| k8s-node001 | 172.25.188.70 |                  kubelet、kube-proxy、docker                   |
+| k8s-node002 | 172.25.188.71 |                  kubelet、kube-proxy、docker                   |
 
 ## 2、在开始之前
 - 1、设置主机名
@@ -225,4 +225,30 @@ kubectl get nodes --show-labels
 kubectl label node k8s-nodexxx node-role.kubernetes.io/node=
 
 kubectl get nodes
+```
+
+## 5、删除节点
+```
+# 1、排出一个节点
+kubectl drain <node name> --delete-local-data --force --ignore-daemonsets
+# 2、删除节点
+kubectl delete node <node name>
+# 3、重制节点
+kubeadm reset
+# 4、删除节点信息
+systemctl stop kubelet
+systemctl stop docker
+rm -rf /var/lib/cni
+rm -rf /var/lib/kubelet/
+rm -rf /etc/cni/
+rm -rf /etc/kubernetes
+ifconfig cni0 down
+ifconfig flannel.1 down
+ifconfig docker0 down
+ip link delete cni0
+ip link delete flannel.1
+iptables -F && iptables -t nat -F
+iptables -t mangle -F && iptables -X
+ipvsadm -C
+systemctl start docker
 ```

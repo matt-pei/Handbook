@@ -122,7 +122,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6808
-              name: web
+              name: master
               protocol: TCP
             - containerPort: 6809
               name: agent
