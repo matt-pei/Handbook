@@ -1,0 +1,173 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-ns
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Delete
+  nfs:
+    server: 192.168.11.6
+    path: /data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: jenkins-ns
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: jenkins
+  name: jenkins-sa
+  namespace: jenkins-ns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRole
+kind: Role
+metadata:
+  name: jenkins-role
+  namespace: jenkins-ns
+rules:
+  - apiGroups: ["extensions", "apps"]
+    resources: ["deployments"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create","delete","get","list","patch","update","watch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create","delete","get","list","patch","update","watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-rd
+  namespace: jenkins-ns
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-role
+subjects:
+  - kind: ServiceAccount
+    name: jenkins-sa
+    namespace: jenkins-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: jenkins
+  name: jenkins
+  namespace: jenkins-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: jenkins
+  template:
+    metadata:
+      labels:
+        k8s-app: jenkins
+      name: jenkins
+      namespace: jenkins-ns
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:2.211
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 68080    # Jenkins访问端口
+            name: master
+            protocol: TCP
+          - containerPort: 68081    # slave连接端口
+            name: agent
+            protocol: TCP
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /login
+            port: 68080
+          initialDelaySeconds: 20   # 初始延迟20s
+          timeoutSeconds: 5
+          failureThreshold: 3   # 失败3次
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 68080
+          initialDelaySeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        env:
+          - name: JENKINS_HOME
+            value: /var/lib/jenkins
+          - name: JENKINS_OPTS
+            value: --httpPort=68080
+          - name: JENKINS_SLAVE_AGENT_PORT
+            value: "68081"
+        volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/lib/jenkins
+          securityContext:
+            fsGroup: 1000
+      volumes:
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-pvc
+      serviceAccountName: jenkins-sa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: jenkins-ns
+  labels:
+    k8s-app: jenkins
+spec:
+  type: NodePort
+  ports:
+    - name: master
+      port: 68080
+      targetPort: 60808
+      nodePort: 68080
+    - name: agent
+      port: 68081
+      targetPort: 68081
+      nodePort: 68081
+  selector:
+    k8s-app: jenkins
+
+

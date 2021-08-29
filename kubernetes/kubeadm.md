@@ -151,9 +151,7 @@ cat > /etc/docker/daemon.json <<EOF
   "registry-mirrors": ["https://9vmq4adx.mirror.aliyuncs.com"]
 }
 EOF
-```
-- 5、
-```
+# 启动docker服务
 mkdir -p /etc/systemd/system/docker.service.d
 # Restart Docker
 systemctl daemon-reload
