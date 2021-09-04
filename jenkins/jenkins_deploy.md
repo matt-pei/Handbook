@@ -11,6 +11,16 @@ docker run -dit \
     -p 8080:8080 -p 50000:50000 \
     -v /data/jenkins_home:/var/jenkins_home \
     jenkins/jenkins:2.239
+docker run -dit \
+    --name jenkins \
+    --restart always \
+    -p 8080:8080 -p 50000:50000 \
+    -v /data/jenkins_home:/var/jenkins_home \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /usr/local/bin/docker:/usr/bin/docker \
+    jenkins/jenkins:2.239
+docker exec -it -u root jenkins bash
+usermod -aG root jenkins
 ```
 
 ### 二、配置jenkins代理
