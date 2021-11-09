@@ -6,11 +6,11 @@
 
 ## 🪂 二进制部署Kubernetes集群
 ## 1、服务器规划
-| 角色 | IP | 组件 |
-| :----:| :----: | :----: |
-| k8s-master | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
-| k8s-node001 | 192.168.10.223 | kubelet、kube-proxy、docker、etcd02 |
-| k8s-node002 | 192.168.10.224 | kubelet、kube-proxy、docker、etcd03 |
+|    角色     |       IP       |                               组件                               |
+| :---------: | :------------: | :--------------------------------------------------------------: |
+| k8s-master  | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
+| k8s-node001 | 192.168.10.223 |               kubelet、kube-proxy、docker、etcd02                |
+| k8s-node002 | 192.168.10.224 |               kubelet、kube-proxy、docker、etcd03                |
 
 ## 2、系统初始化设置
 - 1、设置主机名
@@ -189,7 +189,7 @@ EOF
 > 😡 注意：修改`hosts`参数列表中etcd的ip地址
 
 ```
-cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
+cat > /opt/kubernetes/pki/etcd/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
@@ -215,8 +215,8 @@ cat > /opt/kubernetes/pki/etcd-peer-csr.json <<EOF
 }
 EOF
 # 签发etcd证书
-cd /opt/kubernetes/pki/
-cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
+cd /opt/kubernetes/pki/etcd
+cfssl gencert -ca=/opt/kubernetes/pki/ca.pem -ca-key=/opt/kubernetes/pki/ca-key.pem -config=/opt/kubernetes/pki/ca-config.json -profile=peer etcd-peer-csr.json | cfssljson -bare etcd
 ```
 
 ### 4.2 下载etcd安装包
