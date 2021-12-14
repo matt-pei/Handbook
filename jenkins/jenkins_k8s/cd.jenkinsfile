@@ -1,0 +1,102 @@
+// 未完成
+pipeline {
+    agent {
+        kubernetes {
+            label 'mypod-test-8with1'
+            cloud 'kubernetes_aps_test'
+            yaml """
+                apiVersion: v1
+                kind: pod
+                metadata:
+                  labels:
+                    some-label: some-label-value
+                spec:
+                  containers:
+                  - name: busybox
+                    image: registry.aps.datacanvas.com:5000/aps/cicd/jnlp-slave-docker-k8s-mvnsbt:alpine
+                    imagePullPolicy: Always
+                    command:
+                    - cat
+                    tty: true
+                    volumeMounts:
+                    - name: docker-socker
+                      mountPath: /var/run/docker.sock
+                    - name: docker-daemon
+                      mountPath: /etc/docker/daemon.json
+                    - name: kubectl
+                      mountPath: /usr/bin/kubectl
+                    - name: apsserver
+                      mountPath: /mnt/aps/apsservice
+                  volumes:
+                  - name: docker-socker
+                    hostPath:
+                      path: /var/run/docker.sock
+                  - name: docker-daemon
+                    hostPath:
+                      path: /etc/docker/daemon.json
+                  - name: kubectl
+                    hostPath:
+                      path: /usr/bin/kubectl
+                  - name: kubeconfig
+                    hostPath:
+                      path: /opt/.kube
+                  - name: kubeconfig1
+                    hostPath:
+                      path: /opt/.kube
+                  - name: apsservice
+                    hostPath:
+                      path: /mnt/aps/apsservice
+            """
+        }
+    }
+    environment {
+        username = "$user"
+    }
+    stages{
+        def doOneProject(app_name,k8s){
+        stage('Update Images') {
+            setps {
+                containers('busybox') {
+                    docker
+                }
+            }
+        }
+        stage('Deploy') {
+            echo "Successful: ${app_name}"
+        }
+    }
+        def appNameChoose="${appNameChoose}"
+        def k8sversionChoose="${k8sversionChoose}"
+        stage('Display name and k8s versions') {
+            echo appNameChoose  // 数组
+            echo k8sversionChoose
+        }
+        stage('Update Images') {
+            for (i in appNameChoose.tokenize(',')) {
+                for (k in k8sversionChoose.tokenize(',')) {
+                    doOneProject(i,k)
+                }
+            } else {
+                echo "请选择k8s版本"
+            }
+        }
+    }
+}
+
+pipeline {
+    agent {
+        
+    }
+// node("172.20.50.169"){
+   def appNameChoose="${appNameChoose}"
+   stage('show appNameChoose') {
+     echo appNameChoose
+   }
+   stage('run all') {
+      for (app_name in appNameChoose.tokenize(',')){
+            doOneProject(app_name)
+        }
+   }
+}
+// }
+
