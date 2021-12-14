@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: some-label-value
+spec:
+  securityContext:
+    runAsUser: 0
+    privileged: true
+  containers:
+  - name: jnlp
+    tty: true
+    workingDir: /home/jenkins/agent
+    image: registry.aps.datacanvas.com:5000/aps/cicd/jenkins-inbound-agent:4.3-4
+
+  - name: busybox
+    image: registry.aps.datacanvas.com:5000/aps/cicd/jnlp-slave-docker-k8s-mvnsbt:alpine
+    imagePullPolicy: Always
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-socker
+      mountPath: /var/run/docker.sock
+    - name: docker-daemon
+      mountPath: /etc/docker/daemon.json
+    - name: kubectl
+      mountPath: /usr/bin/kubectl
+    - name: apsservice
+      mountPath: /mnt/aps/apsservice
+  volumes:
+  - name: docker-socker
+    hostPath:
+      path: /var/run/docker.sock
+  - name: docker-daemon
+    hostPath:
+      path: /etc/docker/daemon.json
+  - name: kubectl
+    hostPath:
+      path: /usr/bin/kubectl
+  - name: kubeconfig
+    hostPath:
+      path: /opt/.kube
+  - name: kubeconfig1
+    hostPath:
+      path: /opt/.kube
+  - name: apsservice
+    hostPath:
+      path: /mnt/aps/apsservice
