@@ -1,5 +1,42 @@
 
-## Elasticsearch
+## 一、Redis
+```
+# 导出redis所有的keys
+/opt/redis-5.0.13/src/redis-cli --raw -h pro-ec-rd-id-ro.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 --scan >> ./redis_ecrd_all_key.csv
+
+# 查看redis最大的keys
+/opt/redis-5.0.13/src/redis-cli -h pro-dsg-redis-ro.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 --scan --bigkeys
+``` 
+
+```
+# 删除redis key 预生产环境
+./redis-cli -h pre-ec-rd-id.rwzege.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 KEYS oso:cloud_pre* | xargs -r -t -n1 ./redis-cli -h pre-ec-rd-id.rwzege.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 DEL
+# Del redis key 生产环境
+## Ip: 4.229
+/data/aws-redis/redis-stable/src/redis-cli -h pro-ec-rd-id.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 keys oso:xxxx* | xargs /data/aws-redis/redis-stable/src/redis-cli -h pro-ec-rd-id.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 del
+```
+
+## pg数据库
+```
+## 清空数据库表数据
+delete from daimler02.hcc_attributes;
+```
+
+
+# 安装repository-s3
+## 备份ES数据到AWS S3上
+```
+elasticsearch-plugin install repository-s3
+# elasticsearch-plugin remove repository-s3
+
+```
+
+
+
+
+
+
+## 二、Elasticsearch
 ### 快照备份
 ```
 # 创建快照仓库
