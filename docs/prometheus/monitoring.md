@@ -14,7 +14,7 @@ docker run -dit --restart always --name=grafana -p 3000:3000 -v /data/devops/gra
 docker pull prom/node-exporter:v0.18.1
 docker pull prom/node-exporter:v1.0.1
 
-docker run -dit --restart always --name node-exporter --net="host" --pid="host" -v "/proc:/host/proc:ro" -v "/sys:/host/sys:ro" -v "/:/host:ro,rslave" prom/node-exporter:v1.3.1 --path.rootfs=/host
+docker run -dit --restart always --name node-exporter -p 9100:9100 --net="host" --pid="host" -v "/proc:/host/proc:ro" -v "/sys:/host/sys:ro" -v "/:/host:ro,rslave" prom/node-exporter:v1.3.1 --path.rootfs=/host
 
 docker run -d \
   --net="host" \
