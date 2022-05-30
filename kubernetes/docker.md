@@ -89,7 +89,7 @@ mkdir /etc/docker
 cat > /etc/docker/daemon.json <<EOF
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
-  "graph": "/home/docker_storage",
+  "graph": "/data/docker_storage",
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "100m"
@@ -110,8 +110,7 @@ mkdir -p /etc/systemd/system/docker.service.d
 ## 5、启动docker
 ```
 # Restart Docker
-systemctl daemon-reload
-systemctl restart docker
-systemctl enable docker
+systemctl daemon-reload && systemctl enable docker
+systemctl restart docker && systemctl status docker
 ```
 
