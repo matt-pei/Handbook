@@ -96,8 +96,9 @@ chronyc -a makestep
 ```
 ```
 # 配置登录超时自动退出
-echo "TMOUT=90000">>.bashrc
-source .bashrc 
+# echo "TMOUT=90000">> /root/.bashrc
+echo "TMOUT=90000">> /root/.bash_profile
+source .bash_profile
  
 sed -i 's/^#ClientAliveInterval 0/ClientAliveInterval 30/' /etc/ssh/sshd_config
 sed -i 's/^#ClientAliveCountMax 3/ClientAliveCountMax 86400/' /etc/ssh/sshd_config
