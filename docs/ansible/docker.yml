@@ -1,0 +1,94 @@
+---
+- hosts: 10.130.36.18
+  remote_user: root
+  tasks:
+    - name: "stop friewalld"
+      shell: "setenforce 0"
+      shell: "sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config"
+      shell: "sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config"
+    - name: "stop firewalld service"
+      service:
+        name: "{{ iterm }}"
+        enable: no
+        state: stopped
+      loop: [firewalld]
+    - name: "create file"
+      file:
+        path: "/data"
+        state: directory
+        owner: root
+        group: root
+    - name: "install tools"
+      yum:
+        name: "{{ iterm }}"
+        state: present
+      loop:
+        - htop
+        - vim
+        - chrony
+        - bash-completion
+    - name: "configuration chrony"
+      lineinfile:
+        path: /etc/chrony.conf
+        create: yes
+        line: "{{ iterm }}"
+      with_items:
+        - 'server ntp.aliyun.com iburst'
+        - 'stratumweight 0'
+        - 'driftfile /var/lib/chrony/drift'
+        - 'rtcsync'
+        - 'makestep 10 3'
+        - 'bindcmdaddress 127.0.0.1'
+        - 'bindcmdaddress ::1'
+        - 'keyfile /etc/chrony.keys'
+        - 'commandkey 1'
+        - 'generatecommandkey'
+        - 'logchange 0.5'
+        - 'logdir /var/log/chrony'
+    - name: "Start the chrony service"
+      service:
+        name: "{{ iterm }}"
+        enable: yes
+        state: started
+    - name: "remove old docker"
+      yum:
+        name: "{{ iterm }}"
+        state: rabsent
+      loop:
+        - docker
+        - docker-client
+        - docker-client-latest
+        - docker-common
+        - docker-latest
+        - docker-latest-logrotate
+        - docker-logrotate
+        - docker-selinux
+        - docker-engine-selinux
+        - docker-engine
+    - name: "Delete old docker repo"
+      file:
+        path: /etc/yum.repos.d/docker*.repo
+        state: absent
+    - name: "Install docker"
+      yum:
+        name: "{{ iterm }}"
+        state: present
+      loop:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+    - name: "Install docker repo"
+      yum_repository:
+        name: docker
+        description: docker repo
+        baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+        gpgcheck: no
+        enabled: 1
+    - name: "Install docker server"
+      yum:
+        name: "{{ iterm }}"
+        state: present
+      loop:
+        - docker-ce-19.03.4
+        - docker-ce-cli-19.03.4
+        - containerd.io-1.2.10
