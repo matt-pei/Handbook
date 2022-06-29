@@ -121,25 +121,25 @@ chmod +x /usr/bin/cfssl*
 ```
 cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 {
-    "CN": "kubernetes-ca",
-    "hosts": [
-    ],
-    "key": {
-        "algo": "rsa",
-        "size": 2048
-    },
-    "names": [
-        {
-            "C": "CN",
-            "ST": "Beijing",
-            "L": "Beijing",
-            "O": "kubernetes",
-            "OU": "System"
-        }
-    ],
-    "ca": {
-        "expiry": "87600h"
-    }
+  "CN": "kubernetes",
+  "hosts": [
+   ],
+  "key": {
+      "algo": "rsa",
+      "size": 4096
+  },
+  "names": [
+     {
+       "C": "CN",
+       "ST": "Beijing",
+       "L": "Beijing",
+       "O": "navinfo",
+       "OU": "hdms"
+     }
+  ],
+  "ca": {
+     "expiry": "87600h"
+  }
 }
 EOF
 # 生成CA证书和私钥
@@ -151,38 +151,38 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ```
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
-    "signing": {
-        "default": {
-            "expiry": "87600h"
-        },
-        "profiles": {
-            "server": {
-                "expiry": "87600h",
-                "usages": [
-                    "signing",
-                    "key encipherment",
-                    "server auth"
-                ]
-            },
-            "client": {
-                "expiry": "87600h",
-                "usages": [
-                    "signing",
-                    "key encipherment",
-                    "client auth"
-                ]
-            },
-            "peer": {
-                "expiry": "87600h",
-                "usages": [
-                    "signing",
-                    "key encipherment",
-                    "server auth",
-                    "client auth"
-                ]
-            }
-        }
-    }
+  "signing": {
+       "default": {
+           "expiry": "87600h"
+       },
+       "profiles": {
+           "server": {
+               "expiry": "87600h",
+               "usages": [
+                   "signing",
+                   "key encipherment",
+                   "server auth"
+               ]
+           },
+           "client": {
+               "expiry": "87600h",
+               "usages": [
+                   "signing",
+                   "key encipherment",
+                   "client auth"
+               ]
+           },
+           "peer": {
+               "expiry": "87600h",
+               "usages": [
+                   "signing",
+                   "key encipherment",
+                   "server auth",
+                   "client auth"
+               ]
+           }
+       }
+  }
 }
 EOF
 ```
@@ -206,7 +206,7 @@ cat > /opt/kubernetes/pki/etcd/etcd-peer-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 2048
+        "size": 4096
     },
     "names": [
         {
@@ -396,7 +396,7 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 2048
+        "size": 4096
     },
     "names": [
         {
@@ -435,7 +435,7 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 2048
+        "size": 4096
     },
     "names": [
         {
