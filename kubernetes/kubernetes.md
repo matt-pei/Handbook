@@ -157,7 +157,6 @@ cat > /opt/kubernetes/pki/ca-config.json <<EOF
 EOF
 ```
 #### 3.2.2 创建CA证书请求文件（csr）
-
 ```
 cat > /opt/kubernetes/pki/ca-csr.json <<EOF
 {
