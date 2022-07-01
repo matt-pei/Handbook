@@ -117,37 +117,7 @@ curl -L https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -o /usr/bin/cfssl-
 chmod +x /usr/bin/cfssl*
 ```
 ### 3.2、生成CA证书
-#### 3.2.1 创建CA证书请求文件（csr）
-```
-cat > /opt/kubernetes/pki/ca-csr.json <<EOF
-{
-  "CN": "kubernetes",
-  "hosts": [
-   ],
-  "key": {
-      "algo": "rsa",
-      "size": 4096
-  },
-  "names": [
-     {
-       "C": "CN",
-       "ST": "Beijing",
-       "L": "Beijing",
-       "O": "navinfo",
-       "OU": "hdms"
-     }
-  ],
-  "ca": {
-     "expiry": "87600h"
-  }
-}
-EOF
-# 生成CA证书和私钥
-cd /opt/kubernetes/pki/
-cfssl gencert -initca ca-csr.json | cfssljson -bare ca
-```
-#### 3.2.2 创建根证书的config配置文件
-
+#### 3.2.1 创建CA config配置文件
 ```
 cat > /opt/kubernetes/pki/ca-config.json <<EOF
 {
@@ -186,9 +156,38 @@ cat > /opt/kubernetes/pki/ca-config.json <<EOF
 }
 EOF
 ```
+#### 3.2.2 创建CA证书请求文件（csr）
+
+```
+cat > /opt/kubernetes/pki/ca-csr.json <<EOF
+{
+  "CN": "kubernetes",
+  "hosts": [
+   ],
+  "key": {
+      "algo": "rsa",
+      "size": 2048
+  },
+  "names": [
+     {
+       "C": "CN",
+       "ST": "Beijing",
+       "L": "Beijing",
+       "O": "navinfo",
+       "OU": "hdms"
+     }
+  ],
+  "ca": {
+     "expiry": "87600h"
+  }
+}
+EOF
+# 生成CA证书和私钥
+cd /opt/kubernetes/pki/
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+```
 
 ## 4、部署etcd集群
-
 ### 4.1 创建etcd证书请求文件
 
 > 😡 注意：修改`hosts`参数列表中etcd的ip地址
@@ -206,7 +205,7 @@ cat > /opt/kubernetes/pki/etcd/etcd-peer-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 4096
+        "size": 2048
     },
     "names": [
         {
@@ -396,7 +395,7 @@ cat > /opt/kubernetes/pki/client-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 4096
+        "size": 2048
     },
     "names": [
         {
@@ -435,7 +434,7 @@ cat > /opt/kubernetes/pki/apiserver-csr.json <<EOF
     ],
     "key": {
         "algo": "rsa",
-        "size": 4096
+        "size": 2048
     },
     "names": [
         {
