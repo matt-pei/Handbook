@@ -6,7 +6,7 @@
 
 ## 🪂 二进制部署Kubernetes集群
 ## 1、服务器规划
-|    角色     |       IP       |                 组件  |
+|    角色     |       IP       |      组件  |
 | :---------: | :------------: | :-----------------------------: |
 | controlplan  | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
 | controlplan | 192.168.10.223 |               kubelet、kube-proxy、docker、etcd02                |
