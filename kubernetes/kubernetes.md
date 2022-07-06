@@ -4,8 +4,10 @@
 
 ---
 
+# 文档迭代更新中.....
+---
 ## 🪂 二进制部署Kubernetes集群
-## 1、服务器规划
+## 1、节点规划
 |    角色     |       IP       |                               组件                               |
 | :---------: | :------------: | :--------------------------------------------------------------: |
 | controlplan | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
@@ -31,9 +33,12 @@ hostnamectl status
 echo "127.0.0.1   $(hostname)" >> /etc/hosts
 # 设置集群主机名解析（ALL）
 cat >> /etc/hosts <<EOF
-192.168.10.222   k8s-master
-192.168.10.223   k8s-node001
-192.168.10.224   k8s-node002
+192.168.10.222   controlplane
+192.168.10.223   controlplane
+192.168.10.224   controlplane
+192.168.10.224   k8s-node
+192.168.10.224   k8s-node
+192.168.10.224   k8s-node
 # cfssl
 104.16.234.19   pkg.cfssl.org
 104.16.235.19   pkg.cfssl.org
