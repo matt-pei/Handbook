@@ -13,7 +13,7 @@
 | controlplan | 192.168.10.224 |               kubelet、kube-proxy、docker、etcd03                |
 | k8s-node |  |             kube-proxy、docker                |
 | k8s-node |  |             kube-proxy、docker                |
-| k8s-node |  |             kube-proxy、docker             |
+| k8s-node |  |             kube-proxy、docker                |
 
 ## 2、系统初始化设置
 - 1、设置主机名
