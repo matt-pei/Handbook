@@ -9,8 +9,8 @@
 |    角色     |       IP       |      组件  |
 | :---------: | :------------: | :-----------------------------: |
 | controlplan  | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
-| controlplan | 192.168.10.223 |               kubelet、kube-proxy、docker、etcd02                |
-| controlplan | 192.168.10.224 |               kubelet、kube-proxy、docker、etcd03                |
+| controlplan | 192.168.10.223 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd02  |
+| controlplan | 192.168.10.224 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd03  |
 | k8s-node |  |             kube-proxy、docker                |
 | k8s-node |  |             kube-proxy、docker                |
 | k8s-node |  |             kube-proxy、docker                |
