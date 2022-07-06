@@ -263,40 +263,37 @@ scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node02:/etc/kubernetes/pki
 > 😡 注意：修改`ETCD_NAME`参数和`带ip`的参数
 ```
 mkdir -pv /etc/kubernetes/etcd/
-mkdir -pv /data/kubernetes/etcd/data/
-cat > /etc/kubernetes/etcd/etcd.conf <<EOF
-#[Member]
+mkdir -pv /data/etcd/data/
+cat > /etc/kubernetes/etcd/etcd.conf <<\EOF
+# environment variable
+etcd_1=$(hostname -I | awk '{print $1}')
+# [Member]
 ETCD_NAME="etcd-01"
-ETCD_DATA_DIR="/data/kubernetes/etcd/data/"
-ETCD_LISTEN_PEER_URLS="https://192.168.10.222:2380"
-ETCD_LISTEN_CLIENT_URLS="https://192.168.10.222:2379"
+DATA_DIR="/data/etcd/data/"
+LISTEN_PEER_URLS="https://${etcd_1}:2380"
+LISTEN_CLIENT_URLS="https://${etcd_1}:2379"
 
-#[Clustering]
-ETCD_INITIAL_ADVERTISE_PEER_URLS="https://192.168.10.222:2380"
-ETCD_ADVERTISE_CLIENT_URLS="https://192.168.10.222:2379"
-ETCD_INITIAL_CLUSTER="etcd-01=https://192.168.10.222:2380,etcd-02=https://192.168.10.223:2380,etcd-03=https://192.168.10.224:2380"
+# [Clustering]
+INITIAL_ADVERTISE_PEER_URLS="https://${etcd_1}:2380"
+ADVERTISE_CLIENT_URLS="https://${etcd_1}:2379"
+INITIAL_CLUSTER="etcd-01=https://${etcd_1}:2380,etcd-02=https://${etcd_2}:2380,etcd-03=https://${etcd_3}:2380"
 ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
-ETCD_INITIAL_CLUSTER_STATE="new"
+INITIAL_CLUSTER_STATE="new"
 
-#[Certs]
+# [Certs]
 CA_FILE="/etc/kubernetes/pki/ca.pem"
-ETCD_CERT_FILE="/etc/kubernetes/pki/etcd.pem"
-ETCD_KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
+CERT_FILE="/etc/kubernetes/pki/etcd.pem"
+KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
 EOF
 ```
-> 😡 注意：系统启动服务文件中的ip地址需要手动去更改,因为每台机器的监听ip地址不同,需要更改的参数如下：
-> - --listen-peer-urls
-> - --listen-client-urls
-> - --advertise-client-urls
-> - --initial-advertise-peer-urls
-> 
+ 
 > 🤔 [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
 >  - 1、[使用spuervisor启动etcd](./supervisor.md)
 
 #### 4.3.3 创建etcd系统服务
 ```
 # EnvironmentFile参数引用etcd配置文件
-cat > /lib/systemd/system/etcd.service <<\EOF
+cat > /etc/systemd/system/etcd.service <<\EOF
 [Unit]
 Description=Etcd Server
 Documentation=https://github.com/coreos
@@ -306,24 +303,29 @@ Wants=network-online.target
 [Service]
 Type=notify
 EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
-ExecStart=/opt/src/etcd/etcd --name=${ETCD_NAME} \
-  --data-dir=${ETCD_DATA_DIR} \
-  --quota-backend-bytes=8000000000 \
-  --listen-peer-urls=${ETCD_LISTEN_PEER_URLS} \
-  --listen-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
-  --advertise-client-urls=${ETCD_LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
-  --initial-cluster=${ETCD_INITIAL_CLUSTER} \
-  --initial-advertise-peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} \
-  --ca-file=/etc/kubernetes/pki/ca.pem \
-  --cert-file=/etc/kubernetes/pki/etcd.pem \
-  --key-file=/etc/kubernetes/pki/etcd-key.pem \
-  --client-cert-auth   --trusted-ca-file=/etc/kubernetes/pki/ca.pem \
-  --peer-ca-file=/etc/kubernetes/pki/ca.pem \
-  --peer-cert-file=/etc/kubernetes/pki/etcd.pem \
-  --peer-key-file=${ETCD_KEY_FILE} \
+ExecStart=/opt/src/etcd/etcd \
+  --name=${ETCD_NAME} \
+  --data-dir=${DATA_DIR} \
+  --election-timeout 5000 \
+  --quota-backend-bytes=10000000000 \
+  --initial-election-tick-advance true \
+  --listen-peer-urls=${LISTEN_PEER_URLS} \
+  --listen-client-urls=${LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
+  --initial-advertise-peer-urls=${INITIAL_ADVERTISE_PEER_URLS} \
+  --initial-cluster=${INITIAL_CLUSTER} \
+  --initial-cluster-state=${INITIAL_CLUSTER_STATE} \
+  --advertise-client-urls=${LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
+  --cert-file=${CERT_FILE} \
+  --key-file=${KEY_FILE} \
+  --client-cert-auth \
+  --trusted-ca-file=${CA_FILE} \
+  --peer-cert-file=CERT_FILE \
+  --peer-key-file=${KEY_FILE} \
   --peer-client-cert-auth \
   --peer-trusted-ca-file=${CA_FILE} \
-  --log-output stdout
+  --enable-pprof \
+  --log-output stdout \
+  --log-level info
 
 TimeoutSec=0
 RestartSec=2
@@ -334,10 +336,9 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 # 启动etcd服务
-systemctl daemon-reload
-systemctl restart etcd
-systemctl enable etcd
-systemctl status etcd
+systemctl daemon-reload && systemctl enable etcd.service
+systemctl start etcd.service
+systemctl status etcd.service
 # 查看日志输出（没有报错就说明启动成功）
 journalctl -f -u etcd
 ```
