@@ -292,7 +292,6 @@ EOF
 
 #### 4.3.3 创建etcd系统服务
 ```
-# EnvironmentFile参数引用etcd配置文件
 cat > /etc/systemd/system/etcd.service <<\EOF
 [Unit]
 Description=Etcd Server
