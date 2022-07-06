@@ -196,11 +196,6 @@ cat > /opt/kubernetes/pki/etcd/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
-        "192.168.10.221",
-        "192.168.10.222",
-        "192.168.10.223",
-        "192.168.10.224",
-        "192.168.10.225"
     ],
     "key": {
         "algo": "rsa",
