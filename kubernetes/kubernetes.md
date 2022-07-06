@@ -6,14 +6,14 @@
 
 ## 🪂 二进制部署Kubernetes集群
 ## 1、服务器规划
-|    角色     |       IP       |      组件  |
-| :---------: | :------------: | :-----------------------------: |
-| controlplan  | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
-| controlplan | 192.168.10.223 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd02  |
-| controlplan | 192.168.10.224 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd03  |
-| k8s-node |  |             kube-proxy、docker                |
-| k8s-node |  |             kube-proxy、docker                |
-| k8s-node |  |             kube-proxy、docker                |
+|    角色     |       IP       |                               组件                               |
+| :---------: | :------------: | :--------------------------------------------------------------: |
+| controlplan | 192.168.10.222 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd01 |
+| controlplan | 192.168.10.223 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd02 |
+| controlplan | 192.168.10.224 | kube-apiserver、kube-controller-manager、kube-scheduller、etcd03 |
+|  k8s-node   |                |                        kube-proxy、docker                        |
+|  k8s-node   |                |                        kube-proxy、docker                        |
+|  k8s-node   |                |                        kube-proxy、docker                        |
 
 ## 2、系统初始化设置
 - 1、设置主机名
