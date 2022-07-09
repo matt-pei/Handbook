@@ -65,7 +65,7 @@ for i in k8s-node{001,002};do ssh-copy-id -i ~/.ssh/id_rsa.pub $i;done
 ```
 > ssh-keygen -t rsa -P ''
 > 
-> -P就表示空密码，就只需输入一次回撤。不用-P参数，就需要输入三次回车。
+> -P 表示空密码只需键入一次回车。无-P参数需键入三次回车
 
 - 4、安装常用工具
 ```
@@ -198,13 +198,14 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ## 4、部署etcd集群
 ### 4.1 创建etcd证书请求文件
 
-> 😡 注意：修改`hosts`参数列表中etcd的ip地址
-
 ```
 cat > /opt/kubernetes/pki/etcd/etcd-peer-csr.json <<EOF
 {
     "CN": "k8s-etcd",
     "hosts": [
+        "10.130.36.18",
+        "10.130.36.94",
+        "10.130.36.120"
     ],
     "key": {
         "algo": "rsa",
@@ -263,13 +264,12 @@ scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node01:/etc/kubernetes/pki
 scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node02:/etc/kubernetes/pki
 ```
 
-#### 4.3.2 添加etcd配置文件
-> 😡 注意：修改`ETCD_NAME`参数和`带ip`的参数
+#### 4.3.2 创建etcd配置文件
 ```
 mkdir -pv /etc/kubernetes/etcd/
 mkdir -pv /data/etcd/data/
 cat > /etc/kubernetes/etcd/etcd.conf <<\EOF
-# environment variable
+# Environment variable
 etcd_1=$(hostname -I | awk '{print $1}')
 # [Member]
 ETCD_NAME="etcd-01"
@@ -291,7 +291,7 @@ KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
 EOF
 ```
  
-> 🤔 [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
+> [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
 >  - 1、[使用spuervisor启动etcd](./supervisor.md)
 
 #### 4.3.3 创建etcd系统服务
@@ -306,12 +306,12 @@ Wants=network-online.target
 [Service]
 Type=notify
 EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
-ExecStart=/opt/src/etcd/etcd \
+ExecStart=/opt/src/etcd-v3.4.16/etcd \
   --name=${ETCD_NAME} \
   --data-dir=${DATA_DIR} \
   --election-timeout 5000 \
   --quota-backend-bytes=10000000000 \
-  --initial-election-tick-advance true \
+  --initial-election-tick-advance=true \
   --listen-peer-urls=${LISTEN_PEER_URLS} \
   --listen-client-urls=${LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
   --initial-advertise-peer-urls=${INITIAL_ADVERTISE_PEER_URLS} \
@@ -322,7 +322,7 @@ ExecStart=/opt/src/etcd/etcd \
   --key-file=${KEY_FILE} \
   --client-cert-auth \
   --trusted-ca-file=${CA_FILE} \
-  --peer-cert-file=CERT_FILE \
+  --peer-cert-file=${CERT_FILE} \
   --peer-key-file=${KEY_FILE} \
   --peer-client-cert-auth \
   --peer-trusted-ca-file=${CA_FILE} \
