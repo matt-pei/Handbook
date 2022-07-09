@@ -1,6 +1,14 @@
 
 ## 一、Redis
 ```
+get 
+
+keys
+# zset类型
+ZRANGE xxxxxx 0 -1 withscores
+```
+
+```
 # 导出redis所有的keys
 /opt/redis-5.0.13/src/redis-cli --raw -h pro-ec-rd-id-ro.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 --scan >> ./redis_ecrd_all_key.csv
 
@@ -11,6 +19,7 @@
 ```
 # 删除redis key 预生产环境
 ./redis-cli -h pre-ec-rd-id.rwzege.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 KEYS oso:cloud_pre* | xargs -r -t -n1 ./redis-cli -h pre-ec-rd-id.rwzege.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 DEL
+
 # Del redis key 生产环境
 ## Ip: 4.229
 /data/aws-redis/redis-stable/src/redis-cli -h pro-ec-rd-id.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 keys oso:xxxx* | xargs /data/aws-redis/redis-stable/src/redis-cli -h pro-ec-rd-id.nyswuz.ng.0001.cnw1.cache.amazonaws.com.cn -p 6379 del

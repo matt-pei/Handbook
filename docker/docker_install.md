@@ -220,3 +220,9 @@ docker run -dit \
   --device=/dev/kmsg \
   google/cadvisor:v0.32.0
 ```
+
+docker images  | grep none | awk '{print $3}' | xargs docker rmi
+#更简单的方法
+docker rmi `docker images -q -f dangling=true`
+或
+docker rmi $(docker images -q -f dangling=true)
