@@ -22,4 +22,3 @@ def cpuissue():
 
 memissue()
 cpuissue()
-
