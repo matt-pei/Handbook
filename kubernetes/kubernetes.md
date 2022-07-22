@@ -264,27 +264,8 @@ scp /opt/kubernetes/pki/{ca,etcd,etcd-key}.pem k8s-node02:/etc/kubernetes/pki
 ```
 mkdir -pv /etc/kubernetes/etcd/
 mkdir -pv /data/etcd/data/
-cat > /etc/kubernetes/etcd/etcd.conf <<\EOF
-# Environment variable
-etcd_1=$(hostname -I | awk '{print $1}')
-# [Member]
-ETCD_NAME="etcd-01"
-DATA_DIR="/data/etcd/data/"
-LISTEN_PEER_URLS="https://${etcd_1}:2380"
-LISTEN_CLIENT_URLS="https://${etcd_1}:2379"
+# 下载官方配置文件
 
-# [Clustering]
-INITIAL_ADVERTISE_PEER_URLS="https://${etcd_1}:2380"
-ADVERTISE_CLIENT_URLS="https://${etcd_1}:2379"
-INITIAL_CLUSTER="etcd-01=https://${etcd_1}:2380,etcd-02=https://${etcd_2}:2380,etcd-03=https://${etcd_3}:2380"
-ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
-INITIAL_CLUSTER_STATE="new"
-
-# [Certs]
-CA_FILE="/etc/kubernetes/pki/ca.pem"
-CERT_FILE="/etc/kubernetes/pki/etcd.pem"
-KEY_FILE="/etc/kubernetes/pki/etcd-key.pem"
-EOF
 ```
  
 > [可选项] 如果想使用supervisor方式启动etcd和kubernetes组件服务,请点击跳转“使用spuervisor启动etcd”并忽略“4.3.3 创建etcd系统服务”
@@ -301,30 +282,7 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-EnvironmentFile=/etc/kubernetes/etcd/etcd.conf
-ExecStart=/opt/src/etcd-v3.4.16/etcd \
-  --name=${ETCD_NAME} \
-  --data-dir=${DATA_DIR} \
-  --election-timeout 5000 \
-  --quota-backend-bytes=10000000000 \
-  --initial-election-tick-advance=true \
-  --listen-peer-urls=${LISTEN_PEER_URLS} \
-  --listen-client-urls=${LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
-  --initial-advertise-peer-urls=${INITIAL_ADVERTISE_PEER_URLS} \
-  --initial-cluster=${INITIAL_CLUSTER} \
-  --initial-cluster-state=${INITIAL_CLUSTER_STATE} \
-  --advertise-client-urls=${LISTEN_CLIENT_URLS},http://127.0.0.1:2379 \
-  --cert-file=${CERT_FILE} \
-  --key-file=${KEY_FILE} \
-  --client-cert-auth \
-  --trusted-ca-file=${CA_FILE} \
-  --peer-cert-file=${CERT_FILE} \
-  --peer-key-file=${KEY_FILE} \
-  --peer-client-cert-auth \
-  --peer-trusted-ca-file=${CA_FILE} \
-  --enable-pprof \
-  --log-output stdout \
-  --log-level info
+ExecStart=/opt/src/etcd-v3.4.16/etcd --config-file=/etc/kubernetes/etcd/etcd.conf.yml
 
 TimeoutSec=0
 RestartSec=2
@@ -344,7 +302,7 @@ journalctl -f -u etcd
 #### 4.3.4 查看etcd集群状态
 ```
 # 创建软链接etcd命令
-ln -s /opt/src/etcd/etcdctl /usr/local/sbin/
+ln -s /opt/src/etcd-v3.4.16/etcdctl /usr/local/sbin/
 
 # 查看etcd集群健康检查
 etcdctl cluster-health
@@ -724,6 +682,17 @@ ln -s /opt/src/kubernetes/server/bin/kubectl /usr/local/sbin/
 # 检查集群状态
 kubectl get cs
 kubectl get cs -o yaml
+```
+```
+### kubectl命令补全
+yum -y install bash-completion
+kubectl completion -h
+# 临时生效
+source <(kubectl completion bash)
+# 永久生效
+echo 'source <(kubectl completion bash)' >>~/.bashrc
+# echo "source <(kubectl completion bash)" >> /root/.bashrc
+kubectl completion bash >/etc/bash_completion.d/kubectl
 ```
 
 
