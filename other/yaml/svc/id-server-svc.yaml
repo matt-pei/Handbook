@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: id-server
+  name: id-server
+  namespace: hdms-app
+spec:
+  ports:
+  - protocol: TCP
+    port: 8203
+    targetPort: 8203
+  selector:
+    k8s-app: id-server
+
