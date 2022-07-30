@@ -59,7 +59,7 @@ spec:
             memory: 4000Mi
           requests:
             cpu: 1000m
-            memory: 4000Mi
+            memory: 2000Mi
         securityContext:
           privileged: false
         terminationMessagePath: /dev/termination-log
