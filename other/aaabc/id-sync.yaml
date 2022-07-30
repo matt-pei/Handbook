@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: id-sync
+  name: id-sync
+  namespace: hdms-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: id-sync
+  #strategy:
+  #  type: RollingUpdate
+  #  rollingupdate:
+  #    maxSurge: 30%
+  #    maxUnavailable: 75%
+  template:
+    metadata:
+      labels:
+        k8s-app: id-sync
+      name: id-sync
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - id-sync
+            topologyKey: "kubernetes.io/hostname"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: id-sync
+      containers:
+      - env:
+        - name: PROFILES
+          value: ningxia-pro
+        - name: CONSUL_IP
+          value: http://10.9.4.86
+        - name: CONSUL_PORT
+          value: "8500"
+        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/id-sync:20Q2sp1-v0-200210
+        imagePullPolicy: Always
+        name: id-sync
+        ports:
+        - containerPort: 7070
+        resources:
+          limits:
+            cpu: 200m
+            memory: 2000Mi
+          requests:
+            cpu: 200m
+            memory: 2000Mi
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+

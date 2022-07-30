@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: compiler-master-oem-china
+  name: compiler-master-oem-china
+  namespace: hdms-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      k8s-app: compiler-master-oem-china
+  strategy:
+    type: RollingUpdate
+    rollingupdate:
+      maxSurge: 30%
+      maxUnavailable: 75%
+  template:
+    metadata:
+      labels:
+        k8s-app: compiler-master-oem-china
+      name: compiler-master-oem-china
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - compiler-master-oem-china
+            topologyKey: "kubernetes.io/hostname"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: compiler-master-oem-china
+      containers:
+      - env:
+        - name: RESULT_QUEUE_HOST
+          value: 10.9.4.86
+        - name: RESULT_QUEUE_CREATE_ON_START
+          value: "True"
+        - name: RESULT_QUEUE_PASSWORD
+          value: idmq
+        - name: START_QUEUE_USERNAME 
+          value: idmq
+        - name: RESULT_QUEUE_ROUTING_KEY
+          value: oem-result-queue-china
+        - name: LISTENER_PORT
+          value: "6665"
+        - name: START_QUEUE_PASSWORD
+          value: idmq
+        - name: MASTER_ENDPOINT
+          value: http://compiler-master-oem-china:6665
+        - name: START_QUEUE_EXCHANGE
+          value: amq.direct
+        - name: START_QUEUE_PURGE_ON_START
+          value: "False"
+        - name: START_QUEUE_HOST
+          value: 10.9.4.86
+        - name: RESULT_QUEUE_PORT
+          value: "5672"
+        - name: START_QUEUE_VHOST
+          value: develope
+        - name: START_QUEUE_ROUTING_KEY 
+          value: oem-start-queue-china
+        - name: RESULT_QUEUE_USERNAME
+          value: idmq
+        - name: START_QUEUE_PORT
+          value: "5672"
+        - name: RESULT_QUEUE_VHOST
+          value: develope
+        - name: RESULT_QUEUE_PURGE_ON_START
+          value: "False"
+        - name: RESULT_QUEUE_QUEUE
+          value: oem-result-queue-china
+        - name: START_QUEUE_CREATE_ON_START
+          value: "True"
+        - name: PARTITION_RELATION
+          value: "{ '120000': [],'330400': [],'512000': [],'500000': [],'440300': [],'441900': [],'510600': [],'320500': [],'110000': [],'510100': [],'510900': [],'310000': [],'131000': [],'130700': [],'440100': [],'130800': [],'441300': [],'130200': [],'130300': [],'440600': [],'DE': [],'000000': [],'130100': [],'130400': [],'130500': [],'130600': [],'130900': [],'131100': [],'320100': [],'320200': [],'320300': [],'320400': [],'320600': [],'320700': [],'320800': [],'320900': [],'321000': [],'321100': [],'321200': [],'321300': [],'330100': [],'330200': [],'330300': [],'330500': [],'330600': [],'330700': [],'330800': [],'330900': [],'331000': [],'331100': [],'440200': [],'440400': [],'440500': [],'440700': [],'440800': [],'440900': [],'441200': [],'441400': [],'441500': [],'441600': [],'441700': [],'441800': [],'442000': [],'445100': [],'445200': [],'445300': []}"
+        - name: RESULT_QUEUE_EXCHANGE
+          value: amq.direct
+        - name: WORKER_ENDPOINT
+          value: http://compiler-worker-oso:3334
+        - name: START_QUEUE_QUEUE
+          value: oem-start-queue-china
+        #- name: LRM_SERVICE
+        #  value: http://hdms-19q4sp1lrmservice.marathon.l4lb.thisdcos.directory:8303/decodeolr?hst=1
+        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/compiler-master:20220706
+        imagePullPolicy: Always
+        name: compiler-master-oem-china
+        ports:
+        - containerPort: 6665
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 1000m
+            memory: 4000Mi
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
