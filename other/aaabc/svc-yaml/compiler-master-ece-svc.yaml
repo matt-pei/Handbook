@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: compiler-master-ece
+  name: compiler-master-ece
+  namespace: hdms-app
+spec:
+  ports:
+  - protocol: TCP
+    port: 4444
+    targetPort: 4444
+  selector:
+    k8s-app: compiler-master-ece
+

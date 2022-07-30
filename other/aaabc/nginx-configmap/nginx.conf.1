@@ -1,0 +1,464 @@
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  40240;
+}
+
+#max open file number
+
+http {
+    server_tokens off;
+    add_header X-Frame-Options SAMEORIGIN;
+    gzip  on;
+    gzip_min_length 1k;
+    gzip_buffers 4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level 2;
+    gzip_types text/plain application/javascript application/css  text/css application/xml text/javascript application/x-httpd-php image/jpeg image/gif image/png;
+    gzip_vary off;
+    gzip_disable "MSIE [1-6]\.";
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    proxy_connect_timeout    600;
+    
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" $request_length '
+                      '$status $body_bytes_sent "$http_traceID" "$http_Authorization" "$http_referer"'
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    log_format id_format '$time_local || $http_host || $http_x_forwarded_for || $http_Authorization || $upstream_http_httpstatus || $remote_addr || '
+                      '$remote_user || $request || $status || $body_bytes_sent || $bytes_sent || $request_time || $msec || $sent_http_s1 || $sent_http_s2';
+    
+    access_log  /var/log/nginx/access.log  main;
+    
+    sendfile        on;
+    #tcp_nopush     on;
+    
+    keepalive_timeout  65;
+    
+    upstream id_upload {
+        server id-upload:8202 weight=1;
+        keepalive 2000;
+    }
+    upstream id_server {
+        server id-server:8203 weight=1;
+        keepalive 2000;
+    }
+    #upstream id_server_readonly {
+    #    server id_server_readonly:8213 weight=1;
+    #    keepalive 2000;
+    #}
+    upstream oso-check {  
+        server oso-check:8003;
+        keepalive 2000;
+    } 
+    #upstream id_monitor {
+    #    server hdms-19q4sp1idistributor-monitor.marathon.l4lb.thisdcos.directory:8201;
+    #    keepalive 2000;
+    #}
+    upstream id_auth {
+        server id-auth:8200;
+        keepalive 2000;
+    }
+    upstream id_notification {
+        server id-notification:8204;
+        keepalive 2000;
+    }
+    upstream id_webportal {
+        server webportal:8002;
+        keepalive 2000;
+    }
+    upstream id_webauth {
+        server hadauth:8003;
+        keepalive 2000;
+    }
+    upstream id_oemgui {
+        server oemgui:8004;
+        keepalive 2000;
+    }
+    #upstream id_editor {
+    #    server id-editor:8091;
+    #    keepalive 2000;
+    #}
+    upstream id_sync {
+        server id-sync:7070;
+        keepalive 2000;
+    }
+    upstream id_task {
+        server id-task:8206;
+        keepalive 2000;
+    }
+#    upstream id_kibana {
+#        server hdms-19q4sp1elkkibana.marathon.l4lb.thisdcos.directory:5601;
+#        keepalive 2000;
+#    }
+    upstream ig_web {
+        server igweb:8005;
+        keepalive 2000;
+    }
+    #upstream ig_api {
+    #    server ig_api:18081;
+    #    keepalive 2000;
+    #}
+    upstream id_validation {
+        server id-validation-management:8294;
+        keepalive 2000;
+    }
+ #   upstream id_validation_tool  {
+ #       server :8293;
+ #       keepalive 2000;
+ #   }
+    #upstream id_backup {
+    #    server hdms-19q4sp1idistributor-backup.marathon.l4lb.thisdcos.directory:8600;
+    #    keepalive 2000;
+    #}
+    #upstream id_service_management {
+    #    server  hdms-19q4sp1idistributor-service-management.marathon.l4lb.thisdcos.directory:9994;
+    #    keepalive 2000;
+    #}
+    #upstream id_mifconvertor {
+    #    server hdms-19q4sp1idistributor-mifconvertor.marathon.l4lb.thisdcos.directory:8299;
+    #    keepalive 2000;
+    #}
+    upstream dsg_api {
+        server hdmap-cn.navinfo.com;
+        keepalive 2000;
+    }
+    #upstream id_servicemonitor {
+    #    server hdms-19q4sp1idistributor-service-monitor.marathon.l4lb.thisdcos.directory:8610;
+    #    keepalive 2000;
+    #}
+    upstream id_oso_hstdata_st2pg {
+        server oso-hstdata-st2pg:8081;
+        keepalive 2000;
+    }
+    upstream oso-export {
+        server oso-export:8101;
+        keepalive 2000;
+    }
+    server {
+        listen 80;
+        #proxy_buffering off;
+        #fix connectoin timeout and 5xx error
+        large_client_header_buffers 32 256k;
+        client_max_body_size 1024m;
+        client_body_buffer_size 1024k;
+        proxy_buffer_size 256k;
+        proxy_buffers 32 32k;
+        proxy_busy_buffers_size 512k;  
+        fastcgi_read_timeout 900;
+        fastcgi_send_timeout 900;
+        fastcgi_buffer_size 256k;
+        fastcgi_buffers 32 32k;
+        fastcgi_busy_buffers_size 512k;
+        fastcgi_temp_file_write_size 256k;		
+        # define the error pages of each error code
+        error_page 400 /errorpages/HTTP400.html;
+        error_page 401 /errorpages/HTTP401.html;
+        error_page 402 /errorpages/hTTP402.html;
+        error_page 403 /errorpages/HTTP403.html;
+        error_page 404 /errorpages/HTTP404.html;
+        error_page 500 /errorpages/HTTP500.html;
+        error_page 501 /errorpages/HTTP501.html;
+        error_page 502 /errorpages/HTTP502.html;
+        error_page 503 /errorpages/HTTP503.html;
+        
+        location / {
+            proxy_pass http://id_webportal/;
+        }	
+        location /errorpages/	{
+            alias /etc/nginx/errorpages/;
+        }	
+        #location ^~ /health/ {
+        #    alias /root/;
+        #}
+        location /check {
+            proxy_pass http://oso-check/check;
+            proxy_set_header Host $host:$server_port;
+        } 
+        location /ingest {
+            proxy_ignore_client_abort on;
+            proxy_pass http://id_upload/ingest;
+            #proxy_pass http://mdc-api-nginx.marathon.l4lb.thisdcos.directory:80/ingest;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Host  $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_read_timeout 1200;
+            proxy_send_timeout 1200;
+            proxy_connect_timeout 900;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        }
+        location ^~ /upload/ {
+            proxy_pass http://id_upload/upload/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        }
+        location ^~ /load {
+            proxy_pass http://id_upload/load;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 300s;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        }
+        location ^~ /publish/ {
+            proxy_pass http://id_upload/publish/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 150;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        }  
+        location ^~ /query/ {
+            proxy_pass http://id_server/query/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            proxy_send_timeout 6000;
+            proxy_connect_timeout 900;
+            add_header Access-Control-Allow-Origin * always;
+            add_header Access-Control-Allow-Headers "Content-Type, Authorization, tenantId, auth-token" always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD" always;
+            add_header Access-Control-Max-Age 86400 always;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /query/v1/catalogs/HDMap-NDS-254-MCI-China-BMW-Mapupdate/ {
+            proxy_pass http://id_server/query/v1/catalogs/HDMap-NDS-254-MCI-China-BMW-Mapupdate/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            proxy_send_timeout 6000;
+            proxy_connect_timeout 900;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /query/v1/catalogs/HDMap-NDS-2.5.4-China-BMW-Mapupdate-Static/ {
+            proxy_pass http://id_server/query/v1/catalogs/HDMap-NDS-2.5.4-China-BMW-Mapupdate-Static/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            proxy_send_timeout 6000;
+            proxy_connect_timeout 900;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /query/v1/catalogs/SDMap-NDS-2.5.4-China-BMW-ADAS-separation/ {
+            proxy_pass http://id_server/query/v1/catalogs/SDMap-NDS-2.5.4-China-BMW-ADAS-separation/;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            proxy_send_timeout 6000;
+            proxy_connect_timeout 900;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /download/ {
+            proxy_pass http://id_server/download/;
+            proxy_set_header Host $host:$server_port;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /config/ {
+            proxy_pass http://id_server/config/;
+            proxy_set_header Host $host:$server_port;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        location ^~ /catalog/ {
+            proxy_pass http://id_server/catalog/;
+            proxy_set_header Host $host:$server_port;
+        } 
+        location ^~ /tag/ {
+            proxy_pass http://id_server/tag/;
+            proxy_set_header Host $host:$server_port;
+        } 
+        location ^~ /auth/ {
+            proxy_pass http://id_auth/auth/;
+            proxy_set_header Host $host:$server_port;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        } 
+        #location ^~ /log/ {
+        #    #proxy_pass http://id_monitor/log/;
+        #    proxy_pass http://id_auth/log/;
+        #    proxy_set_header Host $host:$server_port;
+        #} 
+        location ^~ /email/ {
+            proxy_pass http://id_auth/email/;
+            proxy_set_header Host $host:$server_port;
+        } 
+        #location ^~ /uploadcenter/ {
+        #    #proxy_pass http://id_monitor/uploadcenter/;
+        #    proxy_pass http://id_auth/uploadcenter/;
+        #    proxy_set_header Host $host:$server_port;
+        #} 
+        location ^~ /token/ {
+            proxy_pass http://id_auth/token/;
+            proxy_set_header Host $host:$server_port;
+        } 
+        location ^~ /notification/ {
+            proxy_pass http://id_notification/notification/;
+            proxy_set_header Host $host:$server_port;
+        } 
+        location ^~ /webportal/ {
+            proxy_pass http://id_webportal/;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location ^~ /oemgui/ {
+        #    proxy_pass http://id_oemgui/;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location ^~ /hadauth/api/auth {
+            proxy_pass http://id_auth/auth;
+            proxy_set_header Host $host:$server_port;
+            access_log /etc/nginx/hdms/log/statistics-access.log id_format;
+        }
+        location ^~ /hadauth/api/email {
+            proxy_pass http://id_auth/email;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location ^~ /hadauth/api/log {
+        #    #proxy_pass http://id_monitor/log;
+        #    proxy_pass http://id_auth/log;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        #location ^~ /hadauth/api/uploadcenter {
+        #    #proxy_pass http://id_monitor/uploadcenter;
+        #    proxy_pass http://id_auth/uploadcenter;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location ^~ /hadauth/api/catalog {
+            proxy_pass http://id_server/catalog;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 6000;
+            proxy_send_timeout 6000;
+            proxy_connect_timeout 900;
+        }
+        location ^~ /hadauth/api/tag {
+            proxy_pass http://id_server/tag;
+            proxy_set_header Host $host:$server_port;
+        }
+        location ^~ /hadauth/ {
+            proxy_pass http://id_webauth/;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location /cert {
+        #    #proxy_pass http://id_cacenter/cert;
+        #    proxy_pass http://id_auth/cert;
+        #    proxy_set_header Host $host:$server_port;
+        #    access_log /var/log/nginx/statistics-access.log id_format;
+        #}
+        #location /cafactory {
+        #    #proxy_pass http://id_cafactory/cafactory;
+        #    proxy_pass http://id_auth/cafactory;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location /ca {
+            proxy_pass http://id_server/ca;
+            proxy_set_header Host $host:$server_port;
+            access_log /var/log/nginx/statistics-access.log id_format;
+        }
+        location /idsync {
+            proxy_pass http://id_sync/idsync;
+            proxy_set_header Host $host:$server_port;
+        } 
+        #location /api/had {
+        #    proxy_pass http://id_editor/had;
+        #    proxy_set_header Host $host:$server_port;
+        #    proxy_read_timeout 300s;
+        #}
+        location /hadauth/api/geo {
+            proxy_pass http://id_server/geo;
+            proxy_set_header Host $host:$server_port;
+        }
+        location /catalogapi/auth {
+            proxy_pass http://id_auth/auth;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 300s;
+        }
+        location /api/geo {
+            proxy_pass http://id_server/geo;
+            proxy_set_header Host $host:$server_port;
+        }
+        location /oem/config {
+            proxy_pass http://id_task/oem/config;
+            proxy_set_header Host $host:$server_port;
+        }
+        location /geo {
+            proxy_pass http://id_server/geo;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location ^~ /kibanaview/ {
+        #    proxy_pass http://id_kibana/;
+        #    proxy_set_header Host $host:$server_port;
+        #    auth_basic "Restricted";
+        #    auth_basic_user_file /etc/nginx/htpasswd;
+        #}
+        location ^~ /igweb/ {
+            proxy_pass http://ig_web/;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location ^~ /igapi/ {
+        #    proxy_pass http://ig_api/;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location /task/config {
+            proxy_pass http://id_task/task/config;
+            proxy_set_header Host $host:$server_port;
+            proxy_read_timeout 300s;
+        }
+        location ^~ /hadauth/api/download/ {		
+            proxy_pass http://id_server/download/;		
+            proxy_set_header Host $host:$server_port;		
+        }
+        location /validation {
+            proxy_pass http://id_validation/validation;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location /validate {
+        #    proxy_pass http://id_validation_tool/validate;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        #location /backup {
+        #    #proxy_pass http://id_backup/backup;
+        #    proxy_pass http://id_task/backup;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location /service {
+            #proxy_pass http://id_service_management/service;
+            proxy_pass http://id_auth/service;
+            proxy_set_header Host $host:$server_port;
+        }
+        location ^~ /frontendapi/ {
+            proxy_pass http://id_auth/;
+            proxy_set_header Host $host:$server_port;
+        }
+        location ^~ /webportal/frontendapi/ {
+            proxy_pass http://id_auth/;
+            proxy_set_header Host $host:$server_port;
+        }
+        #location ^~ /hadauth/api/service {
+        #    #proxy_pass http://id_service_management/service;
+        #    proxy_pass http://id_auth/service;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        #location /convert {
+        #    #proxy_pass http://id_mifconvertor/convert;
+        #    proxy_pass http://id_auth/convert;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        #location /api/service {
+        #    #proxy_pass http://id_service_management/service;
+        #    proxy_pass http://id_auth/service;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        #location ^~ /hadauth/dsgapi/dsg {
+        #    proxy_pass http://dsg_api/dsg;
+        #    proxy_set_header Host $host;
+        #}
+        #location /servicemonitor {
+        #    #proxy_pass http://id_servicemonitor/servicemonitor;
+        #    proxy_pass http://id_task/servicemonitor;
+        #    proxy_set_header Host $host:$server_port;
+        #}
+        location /hst {
+            proxy_pass http://id_oso_hstdata_st2pg/hst;
+            proxy_set_header Host $host:$server_port;
+        }
+        location /export {
+            proxy_pass http://oso-export/export;
+            proxy_set_header Host $host:$server_port;
+        }
+    }
+}

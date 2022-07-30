@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: id-sync
+  name: id-sync
+  namespace: hdms-app
+spec:
+  ports:
+  - protocol: TCP
+    port: 7070
+    targetPort: 7070
+  selector:
+    k8s-app: id-sync
+

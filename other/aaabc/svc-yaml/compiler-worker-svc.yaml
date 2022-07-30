@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: compiler-worker
+  name: compiler-worker
+  namespace: hdms-app
+spec:
+  ports:
+  - protocol: TCP
+    port: 3333
+    targetPort: 3333
+  selector:
+    k8s-app: compiler-worker
+

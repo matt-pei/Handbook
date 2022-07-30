@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: id-notification
+  name: id-notification
+  namespace: hdms-app
+spec:
+  ports:
+  - protocol: TCP
+    port: 8204
+    targetPort: 8204
+  selector:
+    k8s-app: id-notification
+

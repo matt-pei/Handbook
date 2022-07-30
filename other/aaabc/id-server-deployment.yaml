@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: id-server
+  name: id-server
+  namespace: hdms-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      k8s-app: id-server
+  template:
+    metadata:
+      labels:
+        k8s-app: id-server
+      name: id-server
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - id-server
+            topologyKey: "kubernetes.io/hostname"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: id-server
+      containers:
+      - env:
+        - name: PROFILES
+          value: ningxia-pro
+        - name: CONSUL_IP
+          value: http://10.9.4.86
+        - name: CONSUL_PORT
+          value: "8500"
+        - name: JAVA_OPTS
+          value: -Xms1024m -Xmx2000m -XX:MetaspaceSize=128m -XX:+PrintGCDetails -Xloggc:gc.log  -Dspring.config.use-legacy-processing=true
+        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/id-server:2022sp6-v0-220720
+        imagePullPolicy: Always
+        name: id-server
+        ports:
+        - containerPort: 8203
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2000Mi
+          requests:
+            cpu: 1000m
+            memory: 1000Mi
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
