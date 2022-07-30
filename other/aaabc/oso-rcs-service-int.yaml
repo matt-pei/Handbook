@@ -6,7 +6,7 @@ metadata:
   name: oso-rcs-service-int
   namespace: hdms-app
 spec:
-  replicas: 2
+  replicas: 6
   selector:
     matchLabels:
       k8s-app: oso-rcs-service-int
@@ -58,8 +58,8 @@ spec:
             cpu: 4000m
             memory: 8000Mi
           requests:
-            cpu: 4000m
-            memory: 8000Mi
+            cpu: 1000m
+            memory: 4000Mi
         securityContext:
           privileged: false
         terminationMessagePath: /dev/termination-log
