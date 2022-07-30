@@ -11,10 +11,10 @@ spec:
     matchLabels:
       k8s-app: id-log-nginx
   #strategy:
-  #  type: RollingUpdate
-  #  rollingupdate:
+  #  rollingUpdate:
   #    maxSurge: 30%
   #    maxUnavailable: 75%
+  #  type: RollingUpdate
   template:
     metadata:
       labels:
