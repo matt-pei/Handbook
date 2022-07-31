@@ -41,7 +41,7 @@ spec:
       containers:
       - env:
         - name: PROFILES
-          value: ningxia-pro-int-test
+          value: ningxia-pro-int
         - name: CONSUL_IP
           value: http://10.9.4.86
         - name: CONSUL_PORT
