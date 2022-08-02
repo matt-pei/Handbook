@@ -53,9 +53,9 @@ spec:
         - name: DOWNLOAD_SPLIT_THRESHOLD_COEFFICIENT
           value: "1.7"
         - name: AWS_ACCESS_KEY_ID
-          value: AKIAVUXZXPFG6RYZYCUA
+          value: AKIAVUXZXPFGXZRKYIJZ
         - name: AWS_SECRET_ACCESS_KEY
-          value: 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
+          value: sTWTywYIEw3fRdcx720L6+9k8BinK6TCJt6x4up3
         - name: ROOT_PASSWORD
           value: ""
         - name: MAX_CONCURRENT_DOWNLOAD_PER_PROCESS
