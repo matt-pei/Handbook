@@ -42,7 +42,7 @@ spec:
       - env:
         - name: ENV_TAG
           value: k8s
-        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/oso-check:20220726
+        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/oso-check:20220802
         imagePullPolicy: Always
         name: oso-check
         ports:
