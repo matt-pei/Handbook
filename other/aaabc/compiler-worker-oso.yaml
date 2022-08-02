@@ -45,7 +45,7 @@ spec:
         - name: DOWNLOAD_SPLIT_VOLUME
           value: "700"
         - name: TZ
-          value:  "Asia/Shanghai"
+          value: "Asia/Shanghai"
         - name: AWS_ENDPOINT_URL
           value: ""
         - name: DOWNLOAD_SPLIT_THRESHOLD_COEFFICIENT
@@ -53,7 +53,7 @@ spec:
         - name: AWS_ACCESS_KEY_ID
           value: AKIAVUXZXPFGXZRKYIJZ
         - name: AWS_SECRET_ACCESS_KEY
-          value: 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
+          value: "sTWTywYIEw3fRdcx720L6+9k8BinK6TCJt6x4up3"
         - name: ROOT_PASSWORD
           value: ""
         - name: MAX_CONCURRENT_DOWNLOAD_PER_PROCESS
