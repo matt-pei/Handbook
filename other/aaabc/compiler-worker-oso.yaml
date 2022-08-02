@@ -62,6 +62,8 @@ spec:
           value: cn-northwest-1
         - name: MAX_DOWNLOAD_PROCESS_PER_TASK
           value: "20"
+        - name: VOLATILE_WAIT_TIMEOUT
+          value: 60
         image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/compiler-worker:20220715
         imagePullPolicy: Always
         name: compiler-worker-oso
