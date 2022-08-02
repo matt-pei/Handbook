@@ -13,7 +13,7 @@ spec:
   strategy:
     rollingUpdate:
       maxSurge: 30%
-      maxUnavailable: 50%
+      maxUnavailable: 75%
     type: RollingUpdate
   template:
     metadata:
@@ -30,14 +30,7 @@ spec:
                 operator: In
                 values:
                 - compiler-worker-oso
-            topologyKey: "kubernetes.io/hostname"
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: compiler-worker-oso
+            topologyKey: kubernetes.io/hostname
       containers:
       - env:
         - name: WORKER_PORT
@@ -45,7 +38,7 @@ spec:
         - name: DOWNLOAD_SPLIT_VOLUME
           value: "700"
         - name: TZ
-          value: "Asia/Shanghai"
+          value: Asia/Shanghai
         - name: AWS_ENDPOINT_URL
           value: ""
         - name: DOWNLOAD_SPLIT_THRESHOLD_COEFFICIENT
@@ -53,7 +46,7 @@ spec:
         - name: AWS_ACCESS_KEY_ID
           value: AKIAVUXZXPFGXZRKYIJZ
         - name: AWS_SECRET_ACCESS_KEY
-          value: "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"
+          value: sTWTywYIEw3fRdcx720L6+9k8BinK6TCJt6x4up3
         - name: ROOT_PASSWORD
           value: ""
         - name: MAX_CONCURRENT_DOWNLOAD_PER_PROCESS
@@ -63,18 +56,19 @@ spec:
         - name: MAX_DOWNLOAD_PROCESS_PER_TASK
           value: "20"
         - name: VOLATILE_WAIT_TIMEOUT
-          value: 60
+          value: "60"
         image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/compiler-worker:20220715
         imagePullPolicy: Always
         name: compiler-worker-oso
         ports:
         - containerPort: 3334
+          protocol: TCP
         resources:
           limits:
-            cpu: 5000m
+            cpu: "5000m"
             memory: 4000Mi
           requests:
-            cpu: 4000m
+            cpu: "4000m"
             memory: 2000Mi
         securityContext:
           privileged: false
@@ -83,4 +77,3 @@ spec:
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
-
