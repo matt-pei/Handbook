@@ -46,7 +46,7 @@ spec:
           value: http://10.9.4.86
         - name: CONSUL_PORT
           value: "8500"
-        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/oso-export:22sp6-v0-220713
+        image: 388144527693.dkr.ecr.cn-northwest-1.amazonaws.com.cn/hdms/oso-export:22sp6-v0-220801-hot
         imagePullPolicy: Always
         name: oso-export
         ports:
