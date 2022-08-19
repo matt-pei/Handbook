@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: DeamonSet
+matadata:
+  name: node-exporter
+spec:
+  selector:
+    matchLabels:
+      k8s-app: node-exporter
+    template:
+      metadata:
+        lables:
+          k8s-app: node-exporter
+        name: node-exporter
+      spec:
+        hostname: true
+        containers:
+          image:
+          imagePullPolicy: Always
+          name: node-exporter
+          
+    
+
+
+

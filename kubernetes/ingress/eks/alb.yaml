@@ -1,0 +1,25 @@
+# apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-2
+  annotations:
+    alb.ingress.kubernetes.io/actions.forward-multiple-tg:   '{"type":"forward","forwardConfig":{"targetGroups":[{"serviceName":"nginx","servicePort":"80"}],"targetGroupStickinessConfig":{"enabled":false}}}'
+    alb.ingress.kubernetes.io/conditions.forward-multiple-tg:  '[{"field":"http-header","httpHeaderConfig":{"httpHeaderName": "HeaderName", "values":["HeaderValue1", "HeaderValue2"]}}]'
+    alb.ingress.kubernetes.io/listen-ports:   '[{"HTTP": 8080}]'
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/subnets:  'subnet-0196815a34690f2dc, subnet-0757d2e048885b2fa'
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /eks
+            backend:
+              #serviceName: forward-multiple-tg
+              #servicePort: use-annotation
+              service:
+                name: forward-multiple-tg
+                port:
+                  number: use-annotation
