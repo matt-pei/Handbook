@@ -17,8 +17,7 @@ spec:
           image:
           imagePullPolicy: Always
           name: node-exporter
-          
-    
+
 
 
 
