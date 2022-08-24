@@ -12,7 +12,7 @@ systemctl disable firewalld.service
 ### 1.1 创建docker存放目录
 ```
 # 创建data目录
-mkdir -pv /data
+mkdir -pv /data/docker_storage
 ```
 
 ## 2、安装常用工具
