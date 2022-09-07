@@ -269,7 +269,10 @@ curl -H "Content-Type: application/json" -XPUT http://10.9.4.86:9200/_snapshot/�
 {
     "indices": "xxxxx1,xxxxx2,xxxxx3,xxxxx4,xxxxx5"
 }'
-
+```
+```shell
+# 全量备份
+curl -XPUT "http://10.9.4.86:9200/_snapshot/仓库名/snapshot_1?wait_for_completion=true"
 ```
 
 ### 2、恢复数据
