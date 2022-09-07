@@ -74,15 +74,23 @@ which aws
 # 确认安装
 aws --version
 ```
+4. 升级aws cli
+```shell
+# 升级aws cli命令
+## 默认安装为1版本
+~]# ./aws/install --bin-dir /usr/bin --install-dir /usr/aws-cli --update
+You can now run: /usr/bin/aws --version
+~]# aws --version
+aws-cli/2.7.18 Python/3.9.11 Linux/5.10.118-111.515.amzn2.x86_64 exe/x86_64.amzn.2 prompt/off
+```
 
-4. 配置aws cli认证   [aws参考文档](https://docs.amazonaws.cn/cli/latest/userguide/cli-configure-files.html)
+5. 配置aws cli认证   [aws参考文档](https://docs.amazonaws.cn/cli/latest/userguide/cli-configure-files.html)
 ```shell
 ~]# aws configure
 AWS Access Key ID [None]: AKIA***********SAQU5
 AWS Secret Access Key [None]: n74JbaUb*******************pQ10Qj93JeeTI
 Default region name [None]: cn-northwest-1
 Default output format [None]:
-
 ```
 ```shell
 # AWS命令操作
