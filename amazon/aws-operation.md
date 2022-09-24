@@ -148,7 +148,7 @@ mkdir -pv /data
 blkid
 vim /etc/fstab
 UUID=97dc2317-xxxx-xxxx-xxxx-5fd4d53793d2 /data xfs defaults 0 0
-mount -a
+mount -a && df -Th
 ```
 
 2. 配置时间服务
