@@ -1,6 +1,6 @@
 [Unit]
 Description=Apache Kafka server
-Documentation=
+Documentation=https://kafka.apache.org/documentation/
 After=network.target
 
 [Service]
