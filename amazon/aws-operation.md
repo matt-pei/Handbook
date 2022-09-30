@@ -4,7 +4,7 @@
 
 #### 1、EKS配置连接
 
-1. 安装kubectl管理eks集群    [aws参考文档]()
+1. 安装kubectl管理eks集群    [aws参考文档](https://docs.amazonaws.cn/en_us/eks/latest/userguide/install-kubectl.html)
 ```shell
 # 下载aws提供kubectl
 curl -o kubectl https://s3.cn-north-1.amazonaws.com.cn/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl
