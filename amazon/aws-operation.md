@@ -351,6 +351,64 @@ curl -XGET "http://10.201.7.56:9200/_cat/shards?h=index,shard,prirep,state,unass
 curl -XGET "http://10.201.7.56:9200/_cluster/allocation/explain?pretty"
 
 ```
+### 4、ES备份到S3
+#### 1、修改jvm配置参数
+```shell
+# es配置文件下jvm.options文件
+# 修改jvm.options配置文件添加参数
+-Des.allow_insecure_settings=true
+```
+#### 2、安装插件
+```shell
+# 安装S3 Repository Plugin插件
+path/elasticsearch-plugin install repository-s3
+```
+#### 3、配置s3密钥
+```shell
+# 配置s3密钥AKSK
+/path/bin/elasticsearch-keystore add s3.client.default.access_key
+    AKIAXXXXXXXXXXMQSAQU5
+/path/bin/elasticsearch-keystore add s3.client.default.secret_key
+    n74JbaUXXXXXXXXXXXXXXXXXXXXXXXXXj93JeeTI
+# 重启ES服务
+```
+#### 4、创建备份仓库
+
+> 需提前在s3存储桶创建目录
+>
+> 创建s3存储桶
+> 
+> aws s3api put-object --bucket data-backup-hdms-cn-northwest --key hdms_nginxlog/September/hdms_nginxlog-202209/
+
+```shell
+curl -H "Content-Type: application/json" -XPUT 'http://10.9.4.86:9200/_snapshot/仓库名' -d '
+{
+    "type": "s3",
+    "settings": {
+        "bucket": "data-backup-hdms-cn-northwest",
+        "region": "cn-northwest-1",
+        "base_path": "hdms_nginxlog-20220831",
+        "max_snapshot_bytes_per_sec": "1024mb",
+        "max_restore_bytes_per_sec": "1024mb",
+        "endpoint": "s3.cn-northwest-1.amazonaws.com.cn"
+    }
+}'
+
+region：指定s3可用区，必须
+base_path：指定s3存储桶一个目录，否则会存放存储桶/根目录下。
+endpoint： 指定s3中国区的endpoint，其他区咨询AWS。必须
+max_restore_bytes_per_sec: 每个节点的最大快照还原率。默认为无限制
+max_snapshot_bytes_per_sec: 每个节点的最大快照创建率。默认为40mb每秒
+```
+#### 5、备份索引到s3
+```shell
+# 
+curl -H "Content-Type: application/json" -XPUT http://10.9.4.86:9200/_snapshot/仓库名/备份索引名?wait_for_completion=true -d '
+{
+    "indices": "hdms_nginxlog_2022-08-31"
+}'
+```
+
 
 ## 三、RKE部署
 ### 1、安装RKE
