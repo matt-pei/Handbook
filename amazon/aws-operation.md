@@ -387,9 +387,9 @@ curl -H "Content-Type: application/json" -XPUT 'http://10.9.4.86:9200/_snapshot/
     "settings": {
         "bucket": "data-backup-hdms-cn-northwest",
         "region": "cn-northwest-1",
-        "base_path": "hdms_nginxlog-20220831",
-        "max_snapshot_bytes_per_sec": "1024mb",
-        "max_restore_bytes_per_sec": "1024mb",
+        "base_path": "hdms_cacenter_test/hdms_cacenter_test-202209",
+        "max_snapshot_bytes_per_sec": "4096mb",
+        "max_restore_bytes_per_sec": "4096mb",
         "endpoint": "s3.cn-northwest-1.amazonaws.com.cn"
     }
 }'
