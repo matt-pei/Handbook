@@ -1,9 +1,9 @@
 [Unit]
 Description=Harbor
-After=docker.service systemd-network.service systemd-resolved.service
+After=docker.service systemd-networkd.service systemd-resolved.service
 Requires=docker.service
 
-[Services]
+[Service]
 Type=simple
 Restart=on-failure
 RestartSec=5
