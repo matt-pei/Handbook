@@ -1,0 +1,14 @@
+[Unit]
+Description=Harbor
+After=docker.service systemd-network.service systemd-resolved.service
+Requires=docker.service
+
+[Services]
+Type=simple
+Restart=on-failure
+RestartSec=5
+ExecStart=/usr/local/bin/docker-compose -f /opt/harbor/docker-compose.yml up
+ExecStop=/usr/local/bin/docker-compose -f /opt/harbor/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target
