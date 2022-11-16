@@ -2,23 +2,23 @@
 - hosts: 10.130.36.18
   remote_user: root
   tasks:
-    - name: "stop friewalld"
+    - name: "Stop friewalld"
       shell: "setenforce 0"
       shell: "sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config"
       shell: "sed -i 's/^SELINUX=permissive$/SELINUX=disabled/' /etc/selinux/config"
-    - name: "stop firewalld service"
+    - name: "Stop firewalld service"
       service:
         name: "{{ iterm }}"
         enable: no
         state: stopped
       loop: [firewalld]
-    - name: "create file"
+    - name: "Create file"
       file:
         path: "/data"
         state: directory
         owner: root
         group: root
-    - name: "install tools"
+    - name: "Install tools"
       yum:
         name: "{{ iterm }}"
         state: present
@@ -27,7 +27,7 @@
         - vim
         - chrony
         - bash-completion
-    - name: "configuration chrony"
+    - name: "Configuration chrony"
       lineinfile:
         path: /etc/chrony.conf
         create: yes
@@ -50,7 +50,7 @@
         name: "{{ iterm }}"
         enable: yes
         state: started
-    - name: "remove old docker"
+    - name: "Remove old docker"
       yum:
         name: "{{ iterm }}"
         state: rabsent
