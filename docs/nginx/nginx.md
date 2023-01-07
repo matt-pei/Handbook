@@ -7,6 +7,14 @@ daemon on;  # 决定nginx是否应该成为一个守护进程。主要用于开�
 debug_points abort | stop;  # 这个指令用于调试,当检测到内部错误时，例如重新启动工作进程时泄漏套接字，启用debug_points会导致创建核心文件(abort)或停止进程(stop)，以便使用系统调试器进行进一步分析
 env TZ; #
 error_log logs/error.log error; # 配置日志记录。可以在同一个配置级别(1.5.2)上指定多个日志。如果在主配置级别上没有显式地定义将日志写入文件，则将使用默认文件
+load_module modules/ngx_mail_module.so; # 加载动态模块
+lock_file logs/nginx.lock;  # Nginx使用锁机制来实现accept_mutex并序列化对共享内存的访问。在大多数系统中，锁是使用原子操作实现的，这个指令会被忽略。在其他系统上使用“锁文件”机制。这个指令为锁文件的名称指定了一个前缀
+master_process on;  # 确定是否启动工作进程。这个指令是针对nginx开发人员的
+pcre_jit off;   # 启用或禁用对配置解析时已知的正则表达式使用“即时编译”(PCRE JIT)
+pid logs/nginx.pid; # 定义一个文件，用于存储主进程的进程ID
+ssl_engine device;  # 定义硬件SSL加速程序的名称
+thread_pool default threads=32 max_queue=65536; # 定义用于多线程读取和发送文件而不阻塞工作进程的线程池的名称和参数.threads参数定义了线程池中的线程数.如果池中的所有线程都忙，则会有一个新任务在队列中等待。max_queue参数限制允许在队列中等待的任务数量。默认情况下，队列中最多可等待65536个任务。当队列溢出时，任务将以错误的方式完成
+timer_resolution interval;  # 减少工作进程中的计时器分辨率，从而减少gettimeofday()系统调用的数量。默认情况下，每次接收到内核事件时都会调用gettimeofday()。由于分辨率降低，gettimeofday()每隔指定的时间间隔只调用一次
 worker_rlimit_core size;    # 为工作进程更改核心文件的最大大小限制(RLIMIT_CORE)。用于在不重新启动主进程的情况下增加限制
 worker_rlimit_nofile number;    # 更改工作进程打开文件的最大数量限制(RLIMIT_NOFILE)。用于在不重新启动主进程的情况下增加限制
 worker_shutdown_timeout time;   # 为工作进程安全关闭配置超时。当时间到期时，nginx将尝试关闭当前打开的所有连接以方便关机
@@ -42,7 +50,34 @@ http {
     directio off;   # 读取大于或等于指定大小的文件时，允许使用O_DIRECT标志(FreeBSD, Linux)、F_NOCACHE标志(macOS)或directio()函数(Solaris)。该指令自动禁止(0.7.15)对给定请求使用sendfile。它可以用于提供大文件
     directio_alignment 512; # 设置方向的对齐方式。在大多数情况下，512字节的对齐就足够了。但是，在Linux下使用XFS时，需要将其提高到4K
     disable_symlinks off;   # 确定在打开文件时应如何处理符号链接 "off"路径名中的符号链接是允许的，不检查。这是默认行为 "on"如果路径名的任何组成部分是符号链接，则拒绝访问文件 "if_not_owner"如果路径名的任何组成部分是符号链接，并且链接指向的链接和对象具有不同的所有者，则拒绝访问文件 "from=part" 当检查符号链接(参数on和if_not_owner)时，通常会检查路径名的所有组件。通过额外指定from=part参数，可以避免在路径名的初始部分检查符号链接。在这种情况下，只从指定的初始部分后面的pathname组件检查符号链接。如果该值不是检查的路径名的初始部分，则检查整个路径名，就好像根本没有指定该参数一样。如果该值与整个文件名匹配，则不检查符号链接。参数值可以包含变量
-    
+    error_page 404             /404.html;   # 同下
+    error_page 500 502 503 504 /50x.html;   # 定义将在指定错误时显示的URI。uri值可以包含变量
+    etag on;    # 启用或禁用自动生成静态资源的“ETag”响应报头字段
+    if_modified_since exact;    # 指定如何将响应的修改时间与“If-Modified-Since”请求报头字段中的时间进行比较: "of"响应总是被认为是修改的 "exaact"精确匹配 "before"响应的修改时间小于或等于If-Modified-Since请求报头字段中的时间
+    ignore_invalid_headers on;  # 控制是否应忽略具有无效名称的报头字段。有效的名称由英文字母、数字、连字符和可能的下划线组成(由underscores_in_headers指令控制)
+    keepalive_disable msie6;    # 禁用行为不端的浏览器保持连接。浏览器参数指定哪些浏览器将受到影响。值msie6一旦收到POST请求，禁用旧版本MSIE的保持连接。值safari禁用与macOS和macOS类操作系统上的safari和类safari浏览器的保持连接。none值启用所有浏览器的保持连接
+    keepalive_requests 1000;    # 设置可以通过一个保持连接服务的最大请求数。在发出最大请求数之后，连接将被关闭,定期关闭连接对于释放每个连接的内存分配是必要的。因此，使用过高的最大请求数可能会导致过多的内存使用，因此不建议使用
+    keepalive_time 1h;  # 限制通过一个保持活动连接处理请求的最大时间。到达此时间后，连接将在后续请求处理之后关闭
+    keepalive_timeout 75s;  # 第一个参数设置了一个超时，在此期间，保持活动的客户端连接将在服务器端保持打开状态。0值禁用保持连接的客户端连接。第二个可选参数在“Keep-Alive: timeout=time”响应报头字段中设置一个值。两个参数可能不同,“Keep-Alive: timeout=time”报头字段可以被Mozilla和Konqueror识别。MSIE在大约60秒内自行关闭保持连接
+    large_client_header_buffers 4 8k;   # 设置用于读取大客户端请求报头的缓冲区的最大数量和大小。请求行不能超过一个缓冲区的大小，否则将向客户端返回414 (request - uri Too Large)错误。请求报头字段也不能超过一个缓冲区的大小，否则将向客户端返回400 (Bad request)错误。缓冲区仅在需要时分配。缺省情况下，缓冲区大小为8K字节。如果在请求处理结束后，连接转换为keep-alive状态，则释放这些缓冲区
+    limit_rate 0;   # 限制向客户端的响应传输速率。速率的单位是字节每秒。零值禁用速率限制。限制是为每个请求设置的，因此如果客户端同时打开两个连接，则总速率将是指定限制的两倍
+    limit_rate_after 0; # 设置初始量，在此之后，对客户端的响应的进一步传输将受到速率限制。参数值可以包含变量
+    lingering_close on; # 控制nginx如何关闭客户端连接.默认值“on”指示nginx在完全关闭连接之前等待和处理来自客户端的额外数据，但仅当启发式提示客户端可能正在发送更多数据时.值"always"将导致nginx无条件地等待和处理额外的客户端数据.值“off”告诉nginx不要等待更多的数据，并立即关闭连接。这种行为违反了协议，在正常情况下不应该使用.为了控制关闭HTTP/2连接，该指令必须在服务器级指定
+    lingering_time 30s; # 当lingering_close生效时，这个指令指定了nginx处理(读取并忽略)来自客户端的额外数据的最大时间。在此之后，连接将被关闭，即使将有更多的数据
+    lingering_timeout 5s;   # 当lingering_close生效时，这个指令指定了更多客户端数据到达的最大等待时间。如果在此期间没有接收到数据，则连接将被关闭。否则，数据被读取并忽略，nginx开始再次等待更多的数据。“等待-读取-忽略”循环被重复，但不会超过lingering_time指令指定的时间
+    log_not_found on;   # 启用或禁用有关未找到文件的错误记录到error_log中
+    log_subrequest off; # 启用或禁用将子请求记录到access_log中
+    max_ranges number;  # 限制字节范围请求中允许的最大范围数。超过限制的请求将被当作没有指定字节范围来处理。缺省情况下，不限制范围的数量。0值完全禁用字节范围支持
+    merge_slashes on;   # 启用或禁用将URI中的两个或多个相邻斜杠压缩为单个斜杠
+    msie_padding on;    # 启用或禁用向状态大于400的MSIE客户机的响应添加注释，以将响应大小增加到512字节
+    msie_refresh off;   # 启用或禁用为MSIE客户端发出刷新而不是重定向
+    open_file_cache off;    # 配置一个缓存，可以存储:打开文件描述符;它们的大小和修改时间;关于存在目录的资料;文件查找错误，如“未找到文件”、“没有读取权限”等
+    open_file_cache_errors off; # 通过open_file_cache启用或禁用文件查找错误缓存
+    open_file_cache_min_uses 1; # 设置在open_file_cache指令的inactive参数所配置的时间段内文件访问的最小次数，文件描述符在缓存中保持打开状态所需的最小次数
+    open_file_cache_valid 60s;  # 设置open_file_cache元素验证的时间
+    output_buffers 2 32k;   # 设置用于从磁盘读取响应的缓冲区的数量和大小
+    port_in_redirect on;    # 启用或禁用在nginx发出的绝对重定向中指定端口.重定向中主服务器名的使用由server_name_in_redirect指令控制
+    postpone_output 1460;   # 如果可能，客户端数据的传输将被推迟，直到nginx有至少大小字节的数据要发送。0表示禁止延迟数据传输
 
 }
 ```
