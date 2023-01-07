@@ -79,6 +79,9 @@ http {
     port_in_redirect on;    # 启用或禁用在nginx发出的绝对重定向中指定端口.重定向中主服务器名的使用由server_name_in_redirect指令控制
     postpone_output 1460;   # 如果可能，客户端数据的传输将被推迟，直到nginx有至少大小字节的数据要发送。0表示禁止延迟数据传输
 
+    server{
+        listen address[:port]   # 
+    }
 }
 ```
 ### 2、log_format
