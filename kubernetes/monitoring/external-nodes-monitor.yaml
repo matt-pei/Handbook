@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: external-nodes-exporter
+  labels:
+    app: external-nodes
+  namespace: monitoring
+subsets:
+  - addresses:
+      - ip: 10.9.4.86
+      - ip: 10.9.5.212
+      - ip: 10.9.6.248
+    ports:
+      - name: metric
+        port: 9100
+        protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: external-nodes-exporter
+  labels:
+    app: external-nodes
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  ports:
+    - name: metric
+      port: 9100
+      protocol: TCP
+      targetPort: 9100
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: external-nodes-exporter
+  namespace: monitoring
+  labels:
+    app: external-nodes
+spec:
+  selector:
+    matchLabels:
+      app: external-nodes
+  endpoints:
+  - port: metric
+    path: /metrics
+    interval: 10s
